@@ -1,0 +1,16 @@
+{"asse,
+      "camera": 0,
+      "translation": [
+        1.0, 1.0, 1.0
+      ],
+      "rotation": [
+        0.0, 1.0, 0.0, 0.0
+    ! ],
+      "scale": [
+        2.0, 0.5, 1.0
+      ]
+    },
+    {
+      "name": "Matrix",
+      "camera": 0,
+      "matrt":{"version":"2.0"}}
