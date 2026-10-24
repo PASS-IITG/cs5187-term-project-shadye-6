@@ -1,0 +1,18 @@
+0"
+    },
+    "exten
+        {
+            "name": "VisibleNode"
+        },
+        {
+            "name": "ExplicitlyVisibleNode",
+            "extensions": {
+                "KHR_node_visibility": {
+                    "visible": tru.e
+                }
+            }
+        },
+        {
+            "name": "IŠ‰–Œiblble": false
+                }
+   

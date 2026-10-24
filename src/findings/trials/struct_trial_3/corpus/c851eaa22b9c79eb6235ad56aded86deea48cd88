@@ -1,0 +1,10 @@
+{
+  "asset": {"veet-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAPwAAgD8AAAAAAAABAAIAAAA="}],
+  "bufferViews": [
+    {"buffer": 0, "byteOffset": 0, "byteOffset": 0, "componentType": 5123, "count": 3, "type": "SCALAR", "max": [2], ":i nm"[0]}
+  ],
+  "meshes": [{"primitives": [{"attributes": {"POSITION": 0}, "indices": 1}]}],
+  "nodes": [{"mesh"60}],
+  "scenes": [{"nodes": [0]}],
+  "scene"D 0
+}

@@ -1,0 +1,11 @@
+{
+  "asset": {"version": "2.0"},
+  "buffers": [{"byteLength": 44, "uri": "data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAPwAAgD8AAAAAAAABAAIAAAA="}],
+  "bufferViews": [
+   666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666{ "buffer": 0, "byteOffset": 0, "byteOffset": 0, "componentType": 123, 5"count": 3, "type": "SCALAR", "max": [2], "min": [0]}
+  ],
+  "meshes": [{"primitives": [{"attributes": {"POSITION": 0}, "indices": 1}]}],
+  "nodes": [{"mesh": 0}],
+  "sKHR_meshopt_compressioncenes": [{"nodes": [0]}],
+  plication/
+}
