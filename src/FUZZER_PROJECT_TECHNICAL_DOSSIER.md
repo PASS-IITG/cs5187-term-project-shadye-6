@@ -219,48 +219,48 @@ fastgltf/                                [Repository Root]
 
 ```mermaid
 graph TD
-    subgraph Fuzzing Engine & Generation
-        LF[libFuzzer Engine]
-        CM[LLVMFuzzerCustomMutator]
-        BM[Byte-Level Mutator<br/>LLVMFuzzerMutate]
-        SM[Structure-Aware Mutator<br/>JSON AST Manipulation]
-        IM[Invariant-Breaking Mutator<br/>Corrupt Bounds / Offsets]
-        PG[Procedural Generator<br/>gltf_generator.cpp]
-        GLB[GLB Container Handler<br/>glb_parser.cpp]
+    subgraph FuzzingEngine ["Fuzzing Engine & Generation"]
+        LF["libFuzzer Engine"]
+        CM["LLVMFuzzerCustomMutator"]
+        BM["Byte-Level Mutator<br/>LLVMFuzzerMutate"]
+        SM["Structure-Aware Mutator<br/>JSON AST Manipulation"]
+        IM["Invariant-Breaking Mutator<br/>Corrupt Bounds / Offsets"]
+        PG["Procedural Generator<br/>gltf_generator.cpp"]
+        GLB["GLB Container Handler<br/>glb_parser.cpp"]
     end
 
-    subgraph Input Processing & Envelope
-        RAW[Raw Fuzzer Byte Stream]
-        ENV[Envelope Parser<br/>splitEnvelope]
-        OPT[Parser Profile Selector<br/>Options 0-7]
-        BUF[GltfDataBuffer::FromBytes]
+    subgraph InputProcessing ["Input Processing & Envelope"]
+        RAW["Raw Fuzzer Byte Stream"]
+        ENV["Envelope Parser<br/>splitEnvelope"]
+        OPT["Parser Profile Selector<br/>Options 0-7"]
+        BUF["GltfDataBuffer::FromBytes"]
     end
 
-    subgraph Target Library (fastgltf upstream)
-        LOAD[fastgltf::Parser::loadGltf]
-        JSONP[simdjson JSON Parser]
-        B64[Base64 Decoder<br/>AVX2 / Fallback]
-        URI[URIView Parser]
-        GMI[Parser::generateMeshIndices]
-        ASSET[fastgltf::Asset Created]
-        VAL[fastgltf::validate]
+    subgraph TargetLibrary ["Target Library (fastgltf upstream)"]
+        LOAD["fastgltf::Parser::loadGltf"]
+        JSONP["simdjson JSON Parser"]
+        B64["Base64 Decoder<br/>AVX2 / Fallback"]
+        URI["URIView Parser"]
+        GMI["Parser::generateMeshIndices"]
+        ASSET["fastgltf::Asset Created"]
+        VAL["fastgltf::validate"]
     end
 
-    subgraph Deep Harness & Safety Oracles
-        EX[Asset Exerciser<br/>asset_exerciser.cpp]
-        GBA[Guarded Buffer Adapter<br/>ASan Redzones]
-        REF[Reference Extent Oracle<br/>Checked Arithmetic]
-        API1[iterateAccessorWithIndex]
-        API2[getAccessorElement]
-        API3[copyFromAccessor]
+    subgraph DeepHarness ["Deep Harness & Safety Oracles"]
+        EX["Asset Exerciser<br/>asset_exerciser.cpp"]
+        GBA["Guarded Buffer Adapter<br/>ASan Redzones"]
+        REF["Reference Extent Oracle<br/>Checked Arithmetic"]
+        API1["iterateAccessorWithIndex"]
+        API2["getAccessorElement"]
+        API3["copyFromAccessor"]
     end
 
-    subgraph Triage Pipeline
-        CRASH[Crash Artifact Captured]
-        MIN[llvm-mc / minimize.sh]
-        REP[Replay Runner / replay.sh]
-        TR[Triage Engine / triage.py]
-        REP_OUT[Finding Markdown Reports]
+    subgraph TriagePipeline ["Triage Pipeline"]
+        CRASH["Crash Artifact Captured"]
+        MIN["llvm-mc / minimize.sh"]
+        REP["Replay Runner / replay.sh"]
+        TR["Triage Engine / triage.py"]
+        REP_OUT["Finding Markdown Reports"]
     end
 
     LF --> CM
@@ -268,15 +268,19 @@ graph TD
     CM -->|25%| SM
     CM -->|40%| IM
     CM -->|10%| PG
-    SM <--> GLB
-    IM <--> GLB
+    SM --- GLB
+    IM --- GLB
 
-    BM & SM & IM & PG --> RAW
+    BM --> RAW
+    SM --> RAW
+    IM --> RAW
+    PG --> RAW
     RAW --> ENV
     ENV -->|Byte 0| OPT
     ENV -->|Bytes 1..N| BUF
 
-    OPT & BUF --> LOAD
+    OPT --> LOAD
+    BUF --> LOAD
     LOAD --> JSONP
     LOAD --> B64
     LOAD --> URI
@@ -287,10 +291,21 @@ graph TD
     ASSET --> EX
     EX --> GBA
     EX --> REF
-    EX --> API1 & API2 & API3
+    EX --> API1
+    EX --> API2
+    EX --> API3
 
-    API1 & API2 & API3 & GMI & B64 & URI -->|Memory Violation| CRASH
-    CRASH --> MIN --> REP --> TR --> REP_OUT
+    API1 -->|Memory Violation| CRASH
+    API2 -->|Memory Violation| CRASH
+    API3 -->|Memory Violation| CRASH
+    GMI -->|Memory Violation| CRASH
+    B64 -->|Memory Violation| CRASH
+    URI -->|Memory Violation| CRASH
+
+    CRASH --> MIN
+    MIN --> REP
+    REP --> TR
+    TR --> REP_OUT
 ```
 
 ---

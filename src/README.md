@@ -40,70 +40,91 @@ The architecture decouples container parsing, JSON AST mutation, configuration p
 
 ```mermaid
 graph TD
-    subgraph Input Generation & Mutation
-        LF[libFuzzer Engine]
-        CM[LLVMFuzzerCustomMutator<br/>fuzz/custom_mutator.cpp]
-        BM[Byte-Level Mutator<br/>LLVMFuzzerMutate (25%)]
-        SM[Valid-Preserving Struct<br/>repair=true (25%)]
-        IM[Invariant-Breaking Struct<br/>repair=false (40%)]
-        PG[Procedural Generator<br/>gltf_generator.cpp (10%)]
-        GLB[GLB Chunk Unpacker / Repacker<br/>glb_parser.cpp]
+    subgraph InputGen ["Input Generation & Mutation"]
+        LF["libFuzzer Engine"]
+        CM["LLVMFuzzerCustomMutator<br/>fuzz/custom_mutator.cpp"]
+        BM["Byte-Level Mutator<br/>LLVMFuzzerMutate (25%)"]
+        SM["Valid-Preserving Struct<br/>repair=true (25%)"]
+        IM["Invariant-Breaking Struct<br/>repair=false (40%)"]
+        PG["Procedural Generator<br/>gltf_generator.cpp (10%)"]
+        GLB["GLB Chunk Unpacker / Repacker<br/>glb_parser.cpp"]
     end
 
-    subgraph Input Envelope Dispatch
-        RAW[Raw Fuzzer Byte Stream]
-        ENV[Envelope Parser<br/>splitEnvelope]
-        OPT[Profile Selector: Profiles 0..7<br/>fastgltf::Options]
-        PAY[glTF / GLB Payload Buffer]
+    subgraph EnvelopeDispatch ["Input Envelope Dispatch"]
+        RAW["Raw Fuzzer Byte Stream"]
+        ENV["Envelope Parser<br/>splitEnvelope"]
+        OPT["Profile Selector: Profiles 0..7<br/>fastgltf::Options"]
+        PAY["glTF / GLB Payload Buffer"]
     end
 
-    subgraph Target Library (fastgltf v0.9.1)
-        LOAD[fastgltf::Parser::loadGltf]
-        SIMD[simdjson JSON Parser]
-        B64[Base64 Decoder<br/>AVX2 / Fallback]
-        URI[URIView Parser]
-        GMI[Parser::generateMeshIndices]
-        ASSET[fastgltf::Asset Created]
-        VAL[fastgltf::validate]
+    subgraph TargetLib ["Target Library (fastgltf v0.9.1)"]
+        LOAD["fastgltf::Parser::loadGltf"]
+        SIMD["simdjson JSON Parser"]
+        B64["Base64 Decoder<br/>AVX2 / Fallback"]
+        URI["URIView Parser"]
+        GMI["Parser::generateMeshIndices"]
+        ASSET["fastgltf::Asset Created"]
+        VAL["fastgltf::validate"]
     end
 
-    subgraph Deep Harness & Safety Oracles
-        EX[Asset Exerciser<br/>asset_exerciser.cpp]
-        GBA[GuardedBufferAdapter<br/>ASan Redzones per BufferView]
-        REF[ReferenceDecoder<br/>Checked Arithmetic Extent Oracle]
-        ITER[iterateAccessorWithIndex]
-        ELEM[getAccessorElement]
-        COPY[copyFromAccessor]
+    subgraph DeepHarness ["Deep Harness & Safety Oracles"]
+        EX["Asset Exerciser<br/>asset_exerciser.cpp"]
+        GBA["GuardedBufferAdapter<br/>ASan Redzones per BufferView"]
+        REF["ReferenceDecoder<br/>Checked Arithmetic Extent Oracle"]
+        ITER["iterateAccessorWithIndex"]
+        ELEM["getAccessorElement"]
+        COPY["copyFromAccessor"]
     end
 
-    subgraph Triage & Reproduction
-        CRASH[Crash Artifact]
-        TRI[Triage Engine<br/>scripts/triage.py]
-        REP[Replay Runner<br/>scripts/replay.sh]
-        POC1[poc_f011.cpp<br/>Novel Zero-Day PoC]
-        POC2[poc_base64_oob.cpp<br/>Base64 LUT OOB PoC]
+    subgraph TriagePipeline ["Triage & Reproduction"]
+        CRASH["Crash Artifact"]
+        TRI["Triage Engine<br/>scripts/triage.py"]
+        REP["Replay Runner<br/>scripts/replay.sh"]
+        POC1["poc_f011.cpp<br/>Novel Zero-Day PoC"]
+        POC2["poc_base64_oob.cpp<br/>Base64 LUT OOB PoC"]
     end
 
     LF --> CM
-    CM --> BM & SM & IM & PG
-    SM <--> GLB
-    IM <--> GLB
-    BM & SM & IM & PG --> RAW
+    CM -->|25%| BM
+    CM -->|25%| SM
+    CM -->|40%| IM
+    CM -->|10%| PG
+    SM --- GLB
+    IM --- GLB
+
+    BM --> RAW
+    SM --> RAW
+    IM --> RAW
+    PG --> RAW
     RAW --> ENV
     ENV -->|Byte 0| OPT
     ENV -->|Bytes 1..N| PAY
-    OPT & PAY --> LOAD
-    LOAD --> SIMD & B64 & URI
+
+    OPT --> LOAD
+    PAY --> LOAD
+    LOAD --> SIMD
+    LOAD --> B64
+    LOAD --> URI
     LOAD -->|Options::GenerateMeshIndices| GMI
     LOAD --> ASSET
 
     ASSET --> VAL
     ASSET --> EX
-    EX --> GBA & REF
-    EX --> ITER & ELEM & COPY
-    GMI & B64 & URI & ITER --> CRASH
-    CRASH --> TRI --> REP
-    CRASH --> POC1 & POC2
+    EX --> GBA
+    EX --> REF
+    EX --> ITER
+    EX --> ELEM
+    EX --> COPY
+
+    GMI -->|Memory Violation| CRASH
+    B64 -->|Memory Violation| CRASH
+    URI -->|Memory Violation| CRASH
+    ITER -->|Memory Violation| CRASH
+
+    CRASH --> TRI
+    TRI --> REP
+    CRASH --> POC1
+    CRASH --> POC2
 ```
 
 ### Target Hierarchy:
