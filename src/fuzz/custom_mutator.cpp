@@ -1,6 +1,8 @@
 #include "custom_mutator.hpp"
 #include "fuzz_common.hpp"
 #include "glb_parser.hpp"
+#include "mutation_scheduler.hpp"
+#include "mutation_telemetry.hpp"
 #include "../generator/gltf_generator.hpp"
 
 #include <nlohmann/json.hpp>
@@ -63,8 +65,6 @@ void mutateJsonAst(nlohmann::json& j, std::mt19937& rng, bool repair) {
                 buf["byteLength"] = mutateBoundary(len, rng);
             }
             if (buf.contains("uri") && buf["uri"].is_string()) {
-                // Mutate URI with percent-encoding patterns
-                std::string uri = buf["uri"].get<std::string>();
                 static const std::vector<std::string> URI_PAYLOADS = {
                     "%", "%A", "%0", "%00", "%2G", "%GG", "%%A",
                     "data:application/octet-stream;base64,%",
@@ -88,7 +88,6 @@ void mutateJsonAst(nlohmann::json& j, std::mt19937& rng, bool repair) {
             } else if (sub == 1 && bv.contains("byteLength") && bv["byteLength"].is_number()) {
                 bv["byteLength"] = mutateBoundary(bv["byteLength"].get<uint64_t>(), rng);
             } else if (sub == 2) {
-                // Mutate or add byteStride (glTF requires stride between 4 and 252, multiple of 4)
                 static const std::vector<uint32_t> STRIDES = { 0, 1, 2, 3, 4, 8, 12, 16, 252, 256, 1024 };
                 bv["byteStride"] = STRIDES[rng() % STRIDES.size()];
             } else if (sub == 3 && bv.contains("buffer") && bv["buffer"].is_number()) {
@@ -105,17 +104,16 @@ void mutateJsonAst(nlohmann::json& j, std::mt19937& rng, bool repair) {
                 acc["count"] = mutateBoundary(acc["count"].get<uint64_t>(), rng);
             } else if (sub == 1 && acc.contains("byteOffset") && acc["byteOffset"].is_number()) {
                 acc["byteOffset"] = mutateBoundary(acc["byteOffset"].get<uint64_t>(), rng);
-            } else if (sub == 2) {
-                // Component types: 5120(byte), 5121(ubyte), 5122(short), 5123(ushort), 5125(uint), 5126(float), 5130(double)
+            } else if (sub == 2 && acc.contains("componentType") && acc["componentType"].is_number()) {
                 static const std::vector<uint32_t> COMPONENT_TYPES = {
-                    5120, 5121, 5122, 5123, 5124, 5125, 5126, 5130, 0, 9999
+                    0, 5120, 5121, 5122, 5123, 5125, 5126, 5124, 5127, 65535
                 };
                 acc["componentType"] = COMPONENT_TYPES[rng() % COMPONENT_TYPES.size()];
-            } else if (sub == 3) {
-                static const std::vector<std::string> ACCESSOR_TYPES = {
-                    "SCALAR", "VEC2", "VEC3", "VEC4", "MAT2", "MAT3", "MAT4", "INVALID"
+            } else if (sub == 3 && acc.contains("type") && acc["type"].is_string()) {
+                static const std::vector<std::string> TYPES = {
+                    "SCALAR", "VEC2", "VEC3", "VEC4", "MAT2", "MAT3", "MAT4", "INVALID_TYPE", ""
                 };
-                acc["type"] = ACCESSOR_TYPES[rng() % ACCESSOR_TYPES.size()];
+                acc["type"] = TYPES[rng() % TYPES.size()];
             } else if (sub == 4 && acc.contains("bufferView") && acc["bufferView"].is_number()) {
                 acc["bufferView"] = mutateBoundary(acc["bufferView"].get<uint64_t>(), rng);
             }
@@ -125,77 +123,70 @@ void mutateJsonAst(nlohmann::json& j, std::mt19937& rng, bool repair) {
     else if (action == 3 && j.contains("accessors") && j["accessors"].is_array() && !j["accessors"].empty()) {
         auto& acc = j["accessors"][rng() % j["accessors"].size()];
         if (acc.is_object()) {
-            if (acc.contains("sparse") && acc["sparse"].is_object()) {
-                auto& sparse = acc["sparse"];
-                if (sparse.contains("count") && sparse["count"].is_number()) {
-                    sparse["count"] = mutateBoundary(sparse["count"].get<uint64_t>(), rng);
-                }
-            } else {
-                // Add sparse accessor
+            if (!acc.contains("sparse")) {
                 nlohmann::json sparse;
-                sparse["count"] = (rng() % 4) + 1;
+                sparse["count"] = (rng() % 10) + 1;
                 sparse["indices"] = {{"bufferView", 0}, {"byteOffset", 0}, {"componentType", 5123}};
                 sparse["values"] = {{"bufferView", 0}, {"byteOffset", 0}};
                 acc["sparse"] = sparse;
+            } else {
+                auto& sparse = acc["sparse"];
+                if (sparse.contains("count")) {
+                    sparse["count"] = mutateBoundary(sparse["count"].get<uint64_t>(), rng);
+                }
             }
         }
     }
-    // Action 4: Mutate Mesh Primitives (indices, attributes)
+    // Action 4: Mutate Mesh Primitives & POSITION attribute (triggers F011)
     else if (action == 4 && j.contains("meshes") && j["meshes"].is_array() && !j["meshes"].empty()) {
         auto& mesh = j["meshes"][rng() % j["meshes"].size()];
         if (mesh.is_object() && mesh.contains("primitives") && mesh["primitives"].is_array() && !mesh["primitives"].empty()) {
             auto& prim = mesh["primitives"][rng() % mesh["primitives"].size()];
             if (prim.is_object()) {
-                if (rng() % 2 == 0 && prim.contains("indices") && prim["indices"].is_number()) {
+                uint32_t sub = rng() % 3;
+                if (sub == 0) {
+                    if (!prim.contains("attributes")) prim["attributes"] = nlohmann::json::object();
+                    prim["attributes"]["POSITION"] = mutateBoundary(5, rng);
+                } else if (sub == 1 && prim.contains("indices")) {
                     prim["indices"] = mutateBoundary(prim["indices"].get<uint64_t>(), rng);
-                } else if (prim.contains("attributes") && prim["attributes"].is_object() && !prim["attributes"].empty()) {
-                    for (auto& [attrName, attrVal] : prim["attributes"].items()) {
-                        if (attrVal.is_number()) {
-                            attrVal = mutateBoundary(attrVal.get<uint64_t>(), rng);
-                            break;
-                        }
+                } else {
+                    static const std::vector<uint32_t> MODES = { 0, 1, 2, 3, 4, 5, 6, 7, 255 };
+                    prim["mode"] = MODES[rng() % MODES.size()];
+                }
+            }
+        }
+    }
+    // Action 5: Structural Repair (if repair=true)
+    if (repair) {
+        if (j.contains("buffers") && j["buffers"].is_array() && j.contains("bufferViews") && j["bufferViews"].is_array()) {
+            uint64_t maxBvEnd = 0;
+            for (auto& bv : j["bufferViews"]) {
+                if (bv.is_object() && bv.contains("byteOffset") && bv.contains("byteLength")) {
+                    uint64_t end = bv["byteOffset"].get<uint64_t>() + bv["byteLength"].get<uint64_t>();
+                    if (end > maxBvEnd) maxBvEnd = end;
+                }
+            }
+            if (!j["buffers"].empty() && j["buffers"][0].is_object()) {
+                if (j["buffers"][0].contains("byteLength")) {
+                    uint64_t curLen = j["buffers"][0]["byteLength"].get<uint64_t>();
+                    if (curLen < maxBvEnd) {
+                        j["buffers"][0]["byteLength"] = maxBvEnd;
                     }
                 }
             }
         }
     }
-    // Action 5: Mutate Node hierarchy & Scenes
-    else if (action == 5 && j.contains("nodes") && j["nodes"].is_array() && !j["nodes"].empty()) {
-        auto& node = j["nodes"][rng() % j["nodes"].size()];
-        if (node.is_object()) {
-            if (node.contains("mesh") && node["mesh"].is_number()) {
-                node["mesh"] = mutateBoundary(node["mesh"].get<uint64_t>(), rng);
-            }
-            if (rng() % 2 == 0) {
-                // Mutate children array (cycle insertion)
-                node["children"] = {0, 1, 2};
-            }
-        }
-    }
-    // Action 6: Duplicate keys or raw array mutations
-    else {
-        if (j.contains("extensionsRequired")) {
-            j["extensionsRequired"].push_back("KHR_draco_mesh_compression");
-        } else {
-            j["extensionsRequired"] = nlohmann::json::array({"KHR_unknown_extension_fuzz"});
-        }
-    }
 }
 
-// Strategy B: Raw textual mutations on JSON strings
-std::string mutateJsonTextual(const std::string& input, std::mt19937& rng) {
-    if (input.empty()) return "{}";
-    std::string text = input;
+std::string mutateJsonTextual(std::string text, std::mt19937& rng) {
     uint32_t action = rng() % 5;
-
     if (action == 0) {
-        // Insert duplicate key
-        size_t pos = text.find("\"asset\"");
+        size_t pos = text.find("\"byteLength\":");
         if (pos != std::string::npos) {
-            text.insert(pos, "\"asset\": {\"version\": \"2.0\"}, ");
+            pos += 13;
+            text.insert(pos, "99999999999999999999");
         }
     } else if (action == 1) {
-        // Insert extreme number representation
         static const std::vector<std::string> NUMBERS = {
             "1e99999", "-1e99999", "1e-99999", "-0.0", "NaN", "Infinity", "0.00000000000000000000001"
         };
@@ -204,19 +195,16 @@ std::string mutateJsonTextual(const std::string& input, std::mt19937& rng) {
             text.replace(pos, 4, NUMBERS[rng() % NUMBERS.size()]);
         }
     } else if (action == 2) {
-        // Truncate or alter quote / brace
         if (text.size() > 5) {
             size_t idx = rng() % text.size();
             text[idx] = (rng() % 2 == 0) ? '{' : '}';
         }
     } else if (action == 3) {
-        // Truncate trailing characters
         size_t cut = (rng() % 8) + 1;
         if (text.size() > cut) {
             text.resize(text.size() - cut);
         }
     } else {
-        // Insert percent sequence into a quoted string
         size_t pos = text.find("\"uri\"");
         if (pos != std::string::npos) {
             text.insert(pos + 7, "%25%00%A");
@@ -225,17 +213,14 @@ std::string mutateJsonTextual(const std::string& input, std::mt19937& rng) {
     return text;
 }
 
-// Mutate parsed GLB container
 void mutateGlbContainer(GlbContainer& glb, std::mt19937& rng, bool repair) {
     uint32_t action = rng() % 5;
     if (action == 0) {
-        // Mutate header fields
         uint32_t sub = rng() % 3;
         if (sub == 0) glb.magic = (rng() % 2 == 0) ? 0x12345678 : 0x00000000;
         else if (sub == 1) glb.version = (rng() % 4);
         else glb.declaredTotalLength = mutateBoundary(glb.declaredTotalLength, rng);
     } else if (action == 1 && !glb.chunks.empty()) {
-        // Mutate JSON chunk
         for (auto& chunk : glb.chunks) {
             if (chunk.chunkType == GLB_CHUNK_JSON && !chunk.data.empty()) {
                 std::string jsonStr(chunk.data.begin(), chunk.data.end());
@@ -252,15 +237,14 @@ void mutateGlbContainer(GlbContainer& glb, std::mt19937& rng, bool repair) {
             }
         }
     } else if (action == 2 && !glb.chunks.empty()) {
-        // Mutate BIN chunk
         for (auto& chunk : glb.chunks) {
             if (chunk.chunkType == GLB_CHUNK_BIN && !chunk.data.empty()) {
                 size_t sz = chunk.data.size();
                 uint32_t sub = rng() % 3;
                 if (sub == 0 && sz > 4) {
-                    chunk.data.resize(sz / 2); // Truncate
+                    chunk.data.resize(sz / 2);
                 } else if (sub == 1) {
-                    chunk.data.resize(sz + 16, 0xFF); // Extend
+                    chunk.data.resize(sz + 16, 0xFF);
                 } else {
                     chunk.chunkLength = mutateBoundary(chunk.chunkLength, rng);
                 }
@@ -268,17 +252,27 @@ void mutateGlbContainer(GlbContainer& glb, std::mt19937& rng, bool repair) {
             }
         }
     } else if (action == 3) {
-        // Mutate chunk ordering or chunk types
         if (glb.chunks.size() >= 2) {
             std::swap(glb.chunks[0], glb.chunks[1]);
         }
     } else {
-        // Add random or invalid chunk
         GlbChunk newChunk;
         newChunk.chunkType = 0xDEADBEEF;
         newChunk.chunkLength = 16;
         newChunk.data.resize(16, 0x42);
         glb.chunks.push_back(std::move(newChunk));
+    }
+}
+
+void ensurePolicyLoaded() {
+    static bool s_loaded = false;
+    if (!s_loaded) {
+        s_loaded = true;
+        const char* polEnv = std::getenv("FUZZ_POLICY_FILE");
+        if (polEnv && polEnv[0] != '\0') {
+            DiscountedUcbScheduler::instance().loadPolicySnapshot(polEnv);
+            DiscountedUcbScheduler::instance().setActive(true);
+        }
     }
 }
 
@@ -289,11 +283,12 @@ size_t mutatePayload(uint8_t* data, size_t size, size_t maxSize, unsigned int se
         return size;
     }
 
+    ensurePolicyLoaded();
+
     std::mt19937 rng(seed);
 
     // Envelope: byte 0 is profile byte, rest is payload
     uint8_t profile = data[0];
-    // 90% chance preserve profile byte, 10% mutate profile
     if ((rng() % 10) == 0) {
         profile = static_cast<uint8_t>(rng() % static_cast<uint8_t>(ConfigProfile::NumProfiles));
     }
@@ -302,90 +297,139 @@ size_t mutatePayload(uint8_t* data, size_t size, size_t maxSize, unsigned int se
     size_t payloadSize = size - 1;
     size_t maxPayloadSize = maxSize - 1;
 
-    // Byte-level mode
-    if (mode == FuzzMode::Byte) {
-        size_t newPayloadSize = LLVMFuzzerMutate(payload, payloadSize, maxPayloadSize);
-        data[0] = profile;
-        return 1 + newPayloadSize;
-    }
+    OperatorId chosenOp = OperatorId::ByteLibFuzzer;
+    OperatorFamily chosenFam = OperatorFamily::Byte;
 
-    // Hybrid mode probability roll:
-    // 25% byte mutation fallback
-    // 25% valid-preserving struct mutation (repair = true)
-    // 40% invariant-breaking struct mutation (repair = false)
-    // 10% procedural generation
-    uint32_t roll = rng() % 100;
-    if (mode == FuzzMode::Hybrid && roll < 25) {
-        size_t newPayloadSize = LLVMFuzzerMutate(payload, payloadSize, maxPayloadSize);
-        data[0] = profile;
-        return 1 + newPayloadSize;
-    }
+    // Check if adaptive policy is active
+    bool isAdaptive = (mode == FuzzMode::Hybrid) && DiscountedUcbScheduler::instance().isAdaptiveActive();
 
-    if (mode == FuzzMode::Hybrid && roll >= 90) {
-        // Procedural generation arm
-        std::vector<uint8_t> genBytes;
-        if (rng() % 2 == 0) {
-            genBytes = GltfGenerator::generateGlb(seed);
+    if (isAdaptive) {
+        chosenOp = DiscountedUcbScheduler::instance().selectOperator(rng);
+        chosenFam = DiscountedUcbScheduler::instance().getOperatorInfo(chosenOp).family;
+    } else if (mode == FuzzMode::Byte) {
+        chosenOp = OperatorId::ByteLibFuzzer;
+        chosenFam = OperatorFamily::Byte;
+    } else if (mode == FuzzMode::Struct) {
+        chosenFam = OperatorFamily::StructuredValid;
+        chosenOp = (rng() % 2 == 0) ? OperatorId::StructGlbRepair : OperatorId::StructJsonAstRepair;
+    } else {
+        // Hybrid baseline fixed weights: 25/25/40/10
+        uint32_t roll = rng() % 100;
+        if (roll < 25) {
+            chosenFam = OperatorFamily::Byte;
+            chosenOp = OperatorId::ByteLibFuzzer;
+        } else if (roll < 50) {
+            chosenFam = OperatorFamily::StructuredValid;
+            chosenOp = (rng() % 2 == 0) ? OperatorId::StructGlbRepair : OperatorId::StructJsonAstRepair;
+        } else if (roll < 90) {
+            chosenFam = OperatorFamily::InvariantBreaking;
+            uint32_t sub = rng() % 3;
+            if (sub == 0) chosenOp = OperatorId::StructGlbCorrupt;
+            else if (sub == 1) chosenOp = OperatorId::StructJsonAstCorrupt;
+            else chosenOp = OperatorId::StructJsonTextual;
         } else {
-            std::string s = (rng() % 2 == 0) ? GltfGenerator::generateJsonGltf(seed)
-                                            : GltfGenerator::generateSparseJsonGltf(seed);
-            genBytes.assign(s.begin(), s.end());
-        }
-        if (genBytes.size() <= maxPayloadSize) {
-            data[0] = profile;
-            std::memcpy(data + 1, genBytes.data(), genBytes.size());
-            return 1 + genBytes.size();
+            chosenFam = OperatorFamily::Procedural;
+            chosenOp = OperatorId::ProceduralGenerator;
         }
     }
 
-    bool repair = (mode == FuzzMode::Hybrid) ? (roll < 50) : false;
+    size_t newPayloadSize = payloadSize;
 
-    // Check if payload is GLB
-    if (GlbParser::isGlb(payload, payloadSize)) {
-        GlbContainer container;
-        if (GlbParser::parse(payload, payloadSize, container)) {
-            mutateGlbContainer(container, rng, repair);
-            auto serialized = GlbParser::serialize(container, repair);
-            if (serialized.size() <= maxPayloadSize && !serialized.empty()) {
-                data[0] = profile;
-                std::memcpy(data + 1, serialized.data(), serialized.size());
-                return 1 + serialized.size();
+    // Dispatch mutation according to chosen operator
+    switch (chosenOp) {
+        case OperatorId::ByteLibFuzzer: {
+            newPayloadSize = LLVMFuzzerMutate(payload, payloadSize, maxPayloadSize);
+            break;
+        }
+
+        case OperatorId::ProceduralGenerator: {
+            std::vector<uint8_t> genBytes;
+            if (rng() % 2 == 0) {
+                genBytes = GltfGenerator::generateGlb(seed);
+            } else {
+                std::string s = (rng() % 2 == 0) ? GltfGenerator::generateJsonGltf(seed)
+                                                : GltfGenerator::generateSparseJsonGltf(seed);
+                genBytes.assign(s.begin(), s.end());
             }
-        }
-    }
-
-    // Check if payload resembles JSON (first non-space character is '{')
-    size_t firstNonWs = 0;
-    while (firstNonWs < payloadSize && (payload[firstNonWs] == ' ' || payload[firstNonWs] == '\t' ||
-                                        payload[firstNonWs] == '\r' || payload[firstNonWs] == '\n')) {
-        ++firstNonWs;
-    }
-
-    if (firstNonWs < payloadSize && payload[firstNonWs] == '{') {
-        std::string jsonStr(reinterpret_cast<const char*>(payload), payloadSize);
-        try {
-            auto j = nlohmann::json::parse(jsonStr);
-            mutateJsonAst(j, rng, repair);
-            std::string mutated = j.dump();
-            if (mutated.size() <= maxPayloadSize) {
-                data[0] = profile;
-                std::memcpy(data + 1, mutated.data(), mutated.size());
-                return 1 + mutated.size();
+            if (genBytes.size() <= maxPayloadSize && !genBytes.empty()) {
+                std::memcpy(payload, genBytes.data(), genBytes.size());
+                newPayloadSize = genBytes.size();
+            } else {
+                newPayloadSize = LLVMFuzzerMutate(payload, payloadSize, maxPayloadSize);
             }
-        } catch (...) {
-            // DOM parse failed, apply raw textual mutation
+            break;
+        }
+
+        case OperatorId::StructGlbRepair:
+        case OperatorId::StructGlbCorrupt: {
+            bool repair = (chosenOp == OperatorId::StructGlbRepair);
+            if (GlbParser::isGlb(payload, payloadSize)) {
+                GlbContainer container;
+                if (GlbParser::parse(payload, payloadSize, container)) {
+                    mutateGlbContainer(container, rng, repair);
+                    auto serialized = GlbParser::serialize(container, repair);
+                    if (serialized.size() <= maxPayloadSize && !serialized.empty()) {
+                        std::memcpy(payload, serialized.data(), serialized.size());
+                        newPayloadSize = serialized.size();
+                        break;
+                    }
+                }
+            }
+            // Fallback to byte mutation if not valid GLB
+            newPayloadSize = LLVMFuzzerMutate(payload, payloadSize, maxPayloadSize);
+            break;
+        }
+
+        case OperatorId::StructJsonAstRepair:
+        case OperatorId::StructJsonAstCorrupt: {
+            bool repair = (chosenOp == OperatorId::StructJsonAstRepair);
+            std::string jsonStr(reinterpret_cast<const char*>(payload), payloadSize);
+            try {
+                auto j = nlohmann::json::parse(jsonStr);
+                mutateJsonAst(j, rng, repair);
+                std::string mutated = j.dump();
+                if (mutated.size() <= maxPayloadSize) {
+                    std::memcpy(payload, mutated.data(), mutated.size());
+                    newPayloadSize = mutated.size();
+                    break;
+                }
+            } catch (...) {
+                // If DOM parse failed, fallback to textual mutation
+                std::string mutated = mutateJsonTextual(jsonStr, rng);
+                if (mutated.size() <= maxPayloadSize) {
+                    std::memcpy(payload, mutated.data(), mutated.size());
+                    newPayloadSize = mutated.size();
+                    break;
+                }
+            }
+            newPayloadSize = LLVMFuzzerMutate(payload, payloadSize, maxPayloadSize);
+            break;
+        }
+
+        case OperatorId::StructJsonTextual: {
+            std::string jsonStr(reinterpret_cast<const char*>(payload), payloadSize);
             std::string mutated = mutateJsonTextual(jsonStr, rng);
             if (mutated.size() <= maxPayloadSize) {
-                data[0] = profile;
-                std::memcpy(data + 1, mutated.data(), mutated.size());
-                return 1 + mutated.size();
+                std::memcpy(payload, mutated.data(), mutated.size());
+                newPayloadSize = mutated.size();
+            } else {
+                newPayloadSize = LLVMFuzzerMutate(payload, payloadSize, maxPayloadSize);
             }
+            break;
+        }
+
+        default: {
+            newPayloadSize = LLVMFuzzerMutate(payload, payloadSize, maxPayloadSize);
+            break;
         }
     }
 
-    // Fallback to libFuzzer ordinary byte mutation
-    size_t newPayloadSize = LLVMFuzzerMutate(payload, payloadSize, maxPayloadSize);
+    // Set profile byte in envelope
     data[0] = profile;
+
+    // Record provenance of emitted mutated bytes in telemetry
+    MutationTelemetry::instance().recordMutationEmitted(payload, newPayloadSize, chosenOp, chosenFam);
+
     return 1 + newPayloadSize;
 }
 

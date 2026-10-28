@@ -1,6 +1,6 @@
-# fastgltf Structure-Aware Fuzzing Project (`src/`)
+# fastgltf Structure-Aware & Adaptive Hybrid Fuzzing Project (`src/`)
 
-This directory contains the complete source code, mutation engines, safety oracles, fuzzing harnesses, automation scripts, raw experimental evaluation data, and vulnerability reproducers for the **fastgltf** fuzzing term project.
+This directory contains the complete source code, mutation engines, safety oracles, fuzzing harnesses, adaptive schedulers, saturation monitors, automation scripts, raw experimental evaluation data, and vulnerability reproducers for the **fastgltf** fuzzing term project.
 
 ---
 
@@ -25,29 +25,33 @@ All empirical results, coverage measurements, and vulnerability findings were ge
 
 ## 2. Research Hypothesis & Core Objectives
 
-> **Under a constrained fuzzing budget (30 minutes per trial), can a target-specific, structure-aware glTF/GLB mutation engine penetrate deeper parser behavior, achieve higher branch coverage, and discover critical memory safety vulnerabilities compared to standard coverage-guided byte-level mutation?**
+> **Under constrained fuzzing budgets, does a target-specific, structure-aware mutation engine equipped with a multi-armed bandit (Discounted-UCB) adaptive scheduler outperform static byte-level and fixed hybrid mutation in code coverage, deep parser stage penetration, and critical memory safety vulnerability discovery?**
 
-### Key Evaluation Arms:
-1. **`byte` (Baseline):** Standard libFuzzer mutation (`LLVMFuzzerMutate`).
-2. **`struct`:** Pure structure-aware mutation on JSON AST and GLB container chunks.
-3. **`hybrid`:** 4-way stochastic mix combining byte-level fallback, valid-preserving structural mutation, invariant-breaking mutations, and procedural seed synthesis.
+### The Four Comparative Experimental Arms:
+1. **`fixed` (Baseline):** Static 4-way hybrid schedule with fixed probability weights (25% byte, 25% valid structural, 40% invariant-breaking, 10% procedural) without dynamic adaptation or telemetry overhead.
+2. **`adaptive`:** Dynamic multi-armed bandit scheduler using **Discounted Upper Confidence Bound (Discounted-UCB)** that updates family and sub-operator weights at epoch boundaries based on attributed corpus promotions, novel stage outcomes, and oracle findings.
+3. **`fixed_with_saturation`:** Static 4-way baseline combined with a **6-state conservative saturation monitor** that halts execution or attempts plateau recovery when progress stagnates across multiple independent signals.
+4. **`adaptive_with_saturation`:** Full adaptive architecture pairing the Discounted-UCB mutation scheduler with the conservative saturation monitor and plateau recovery sequence.
 
 ---
 
-## 3. Project Architecture
+## 3. System Architecture
 
-The architecture decouples container parsing, JSON AST mutation, configuration profiling, and downstream accessor traversal into modular layers:
+The architecture decouples container parsing, JSON AST mutation, dynamic operator scheduling, in-memory telemetry attribution, configuration profiling, and downstream accessor traversal into modular layers:
 
 ```mermaid
 graph TD
-    subgraph InputGen ["Input Generation & Mutation"]
+    subgraph InputGen ["Input Generation and Adaptive Mutation"]
         LF["libFuzzer Engine"]
         CM["LLVMFuzzerCustomMutator<br/>fuzz/custom_mutator.cpp"]
-        BM["Byte-Level Mutator<br/>LLVMFuzzerMutate (25%)"]
-        SM["Valid-Preserving Struct<br/>repair=true (25%)"]
-        IM["Invariant-Breaking Struct<br/>repair=false (40%)"]
-        PG["Procedural Generator<br/>gltf_generator.cpp (10%)"]
-        GLB["GLB Chunk Unpacker / Repacker<br/>glb_parser.cpp"]
+        SCHED["Discounted-UCB Scheduler<br/>fuzz/mutation_scheduler.cpp"]
+        TELEM["Mutation Telemetry and Ledger<br/>fuzz/mutation_telemetry.cpp"]
+        HASH["Shared 64-bit FNV-1a Hash<br/>fuzz/hash_util.hpp"]
+
+        BM["Family: byte (floor: 5%)<br/>ByteLibFuzzer"]
+        SM["Family: structured_valid (floor: 5%)<br/>StructGlbRepair, StructJsonAstRepair"]
+        IM["Family: invariant_breaking (floor: 5%)<br/>StructGlbCorrupt, StructJsonAstCorrupt, Textual"]
+        PG["Family: procedural (floor: 5%)<br/>ProceduralGenerator (gltf_generator.cpp)"]
     end
 
     subgraph EnvelopeDispatch ["Input Envelope Dispatch"]
@@ -57,7 +61,7 @@ graph TD
         PAY["glTF / GLB Payload Buffer"]
     end
 
-    subgraph TargetLib ["Target Library (fastgltf v0.9.1)"]
+    subgraph TargetLib ["Target Library (fastgltf v0.9.1 upstream)"]
         LOAD["fastgltf::Parser::loadGltf"]
         SIMD["simdjson JSON Parser"]
         B64["Base64 Decoder<br/>AVX2 / Fallback"]
@@ -67,7 +71,8 @@ graph TD
         VAL["fastgltf::validate"]
     end
 
-    subgraph DeepHarness ["Deep Harness & Safety Oracles"]
+    subgraph DeepHarness ["Deep Harness and Safety Oracles"]
+        REC["StageRecorder RAII<br/>STAGE_PARSED, STAGE_VALIDATED, ..."]
         EX["Asset Exerciser<br/>asset_exerciser.cpp"]
         GBA["GuardedBufferAdapter<br/>ASan Redzones per BufferView"]
         REF["ReferenceDecoder<br/>Checked Arithmetic Extent Oracle"]
@@ -76,7 +81,15 @@ graph TD
         COPY["copyFromAccessor"]
     end
 
-    subgraph TriagePipeline ["Triage & Reproduction"]
+    subgraph CampaignSupervision ["Campaign Manager and Saturation Monitor"]
+        MGR["Campaign Manager<br/>scripts/campaign_manager.py"]
+        MON["Saturation Monitor (6-state)<br/>scripts/saturation_monitor.py"]
+        ACC["Restart-Resilient Execution Accounting<br/>Sums all subprocesses"]
+        MATCH["Unambiguous Promotion Matcher<br/>hash:size against ledger"]
+        POLICY["Policy Snapshot Exporter<br/>policy_epoch_XXX.json"]
+    end
+
+    subgraph TriagePipeline ["Triage and Reproduction"]
         CRASH["Crash Artifact"]
         TRI["Triage Engine<br/>scripts/triage.py"]
         REP["Replay Runner<br/>scripts/replay.sh"]
@@ -85,20 +98,22 @@ graph TD
     end
 
     LF --> CM
-    CM -->|25%| BM
-    CM -->|25%| SM
-    CM -->|40%| IM
-    CM -->|10%| PG
-    SM --- GLB
-    IM --- GLB
+    CM --> SCHED
+    SCHED --> BM
+    SCHED --> SM
+    SCHED --> IM
+    SCHED --> PG
 
     BM --> RAW
     SM --> RAW
     IM --> RAW
     PG --> RAW
+    CM -.->|Record Provenance| TELEM
+    TELEM --- HASH
+
     RAW --> ENV
-    ENV -->|Byte 0| OPT
-    ENV -->|Bytes 1..N| PAY
+    ENV -->|Byte 0: Profile| OPT
+    ENV -->|Bytes 1..N: Payload| PAY
 
     OPT --> LOAD
     PAY --> LOAD
@@ -108,6 +123,9 @@ graph TD
     LOAD -->|Options::GenerateMeshIndices| GMI
     LOAD --> ASSET
 
+    PAY -.->|Consume Provenance Once| TELEM
+    TELEM --> REC
+    REC --> VAL
     ASSET --> VAL
     ASSET --> EX
     EX --> GBA
@@ -125,24 +143,85 @@ graph TD
     TRI --> REP
     CRASH --> POC1
     CRASH --> POC2
+
+    MGR --> ACC
+    MGR --> MATCH
+    MGR --> MON
+    MATCH -.->|Attributed Promotions| SCHED
+    MON -.->|Exploration Boost / Recovery| SCHED
+    SCHED --> POLICY
 ```
 
-### Target Hierarchy:
-- **`deep_fuzzer` (`fuzz/deep_fuzzer.cpp`):** Primary target. Decodes envelope profile byte, calls `Parser::loadGltf()`, and executes deep accessor traversal and metamorphic checking.
-- **`parser_fuzzer` (`fuzz/parser_fuzzer.cpp`):** Baseline target. Evaluates pure parser throughput without downstream accessor traversal.
-- **`uri_fuzzer` (`fuzz/uri_fuzzer.cpp`):** Micro-target focusing on `fastgltf::URIView` RFC parsing, authorities, and percent-decoding.
-- **`base64_fuzzer` (`fuzz/base64_fuzzer.cpp`):** Micro-target evaluating AVX2 SIMD vs fallback base64 decoders.
+---
+
+## 4. Mathematical and Algorithmic Formulation
+
+### 4.1 Mutation Operator Registry
+The mutator catalogs 8 specialized operators organized into 4 families with stable IDs:
+
+| Family | ID | Operator Name | Description | Default Weight | Floor |
+| :--- | :---: | :--- | :--- | :---: | :---: |
+| **`byte`** | 0 | `ByteLibFuzzer` | Baseline `LLVMFuzzerMutate` fallback | 0.25 | 0.05 |
+| **`structured_valid`** | 1 | `StructGlbRepair` | Binary GLB chunk mutation with container length repair | 0.125 | 0.02 |
+| | 2 | `StructJsonAstRepair` | nlohmann::json DOM mutation with buffer length repair | 0.125 | 0.02 |
+| **`invariant_breaking`** | 3 | `StructGlbCorrupt` | GLB header/chunk lengths and chunk alignment corruption | 0.14 | 0.02 |
+| | 4 | `StructJsonAstCorrupt` | Accessor counts, bufferView offsets, and invalid types | 0.20 | 0.02 |
+| | 5 | `StructJsonTextual` | Malformed numbers (`1e9999`), cut syntax, URI injection | 0.06 | 0.02 |
+| **`procedural`** | 6 | `ProceduralGenerator` | Algorithmic synthesis of fresh glTF, GLB, and sparse assets | 0.10 | 0.02 |
+
+### 4.2 Discounted-UCB Weight Adaptation
+At each epoch boundary $e$, historical attempts $N_i$ and rewards $R_i$ are exponentially decayed by discount factor $\gamma \in (0, 1]$ (default $\gamma = 0.90$) to prioritize recent operational yield:
+$$N_i^{(e)} = \gamma N_i^{(e-1)} + n_i^{(e)}, \qquad R_i^{(e)} = \gamma R_i^{(e-1)} + r_i^{(e)}$$
+
+The UCB selection score combines exploitation (empirical mean yield) and exploration (uncertainty bonus with coefficient $c = 0.75$):
+$$\text{score}_i = \frac{R_i}{N_i} + c \sqrt{\frac{\ln \sum_j N_j}{N_i}}$$
+
+Reward accrual uses bounded, configurable weights with log-scaling to prevent high-throughput operators from dominating:
+$$\text{raw\_reward} = w_{\text{promo}} \cdot \text{promotions} + w_{\text{stage}} \cdot \text{stages} + w_{\text{oracle}} \cdot \text{oracles} + w_{\text{crash}} \cdot \text{crashes}$$
+$$r_i = \min\left(\ln(1 + \text{raw\_reward}),\; r_{\max} \cdot \max(1, n_i)\right)$$
+
+### 4.3 Probability Normalization with Minimum Floors
+To prevent arm starvation and ensure continuous exploration of the entire mutation spectrum, probabilities are normalized subject to strict floors ($f_{\text{fam}} = 0.05$, $f_{\text{op}} = 0.02$):
+$$p_i = f + (1 - K \cdot f) \frac{\text{score}_i}{\sum_{j \in \text{enabled}} \text{score}_j}$$
+Disabled arms receive exactly $p_i = 0.0$.
+
+### 4.4 In-Memory Provenance Ledger & Replay Safety
+To attribute corpus promotions unambiguously:
+1. When `LLVMFuzzerCustomMutator` produces a payload, it computes the 64-bit FNV-1a hash and enqueues `(hash, size, operator, family, epoch)` into a bounded in-memory FIFO map.
+2. When `LLVMFuzzerTestOneInput` receives bytes, it performs **single-consumption**: the record is matched, consumed, and erased from the pending queue. **Crucially, subsequent corpus replays never inherit stale attribution.**
+3. Consumed records are logged into a retained `provenance_ledger` (`hash:size`).
+4. At epoch completion, `campaign_manager.py` hashes newly retained corpus files and matches them against the ledger. Only unambiguous matches are credited; unmatched promotions are tracked separately.
+
+### 4.5 Conservative Saturation State Machine
+`saturation_monitor.py` implements a 6-state conservative controller to prevent premature stopping:
+- **`ACTIVE`:** Steady progress detected via corpus promotions or feature delta.
+- **`PLATEAU_SUSPECTED`:** 3 consecutive low-yield epochs observed.
+- **`RECOVERY`:** Bounded rescue phase boosting exploration ($1.5\times$) and refreshing template seeds.
+- **`SATURATED`:** Plateau persisted through recovery, minimum runtime (1800s) satisfied, telemetry complete, and zero un-triaged crash candidates pending.
+- **`BUDGET_STOP`:** Hard total wall-time budget reached (distinct from saturation).
+- **`ERROR`:** Missing or corrupted telemetry; fails safe without declaring saturation.
+
+### 4.6 Multi-Subprocess Execution Accounting
+In previous scripts, each trial was a restart loop where the reported execution count came from the *last* child process only. `campaign_manager.py` supervises libFuzzer with `-max_total_time` and **sums executions across ALL child invocations within an epoch**, providing completely accurate throughput and execution totals.
+
+---
+
+## 5. Target Hierarchy
+
+- **`deep_fuzzer` (`fuzz/deep_fuzzer.cpp`):** Primary deep target. Decodes envelope profile byte, calls `Parser::loadGltf()`, executes validation, and traverses accessors with `GuardedBufferAdapter` and `ReferenceDecoder`.
+- **`parser_fuzzer` (`fuzz/parser_fuzzer.cpp`):** Baseline target evaluating pure parser throughput without downstream accessor traversal.
+- **`uri_fuzzer` (`fuzz/uri_fuzzer.cpp`):** Micro-target evaluating `fastgltf::URIView` RFC parsing, authorities, and percent-decoding.
+- **`base64_fuzzer` (`fuzz/base64_fuzzer.cpp`):** Differential micro-target evaluating AVX2 SIMD vs fallback base64 decoders.
 - **`coverage_runner` (`fuzz/coverage_runner.cpp`):** Non-fuzzing harness replaying corpus files for strict Clang source coverage mapping.
 
 ---
 
-## 4. Directory Structure
+## 6. Directory Structure
 
 ```
 src/
-├── CMakeLists.txt                       # Root CMake build definition with sanitizer flags
-├── README.md                            # This file: architecture, run steps, and reproducibility
-├── FUZZER_PROJECT_TECHNICAL_DOSSIER.md  # Comprehensive 72KB evidence-driven audit dossier
+├── CMakeLists.txt                       # CMake build file (targets, ASan, UBSan, tests)
+├── README.md                            # Comprehensive project guide (architecture, math, runs)
 ├── cmake/
 │   └── coverage_allowlist.txt           # Restricts Clang coverage strictly to fastgltf & simdjson
 ├── corpus/
@@ -160,37 +239,34 @@ src/
 │   └── fastgltf/                        # Git submodule pinned to upstream v0.9.1 (commit 705564d)
 ├── findings/                            # Campaign output, raw logs, and vulnerability reports
 │   ├── index.csv                        # Primary triage catalog of unique crash root causes
-│   ├── index_old.csv                    # Historical triage index documenting dedup template artifact
 │   ├── crashes/                         # Raw crash artifacts captured by libFuzzer
-│   ├── minimized/                       # libFuzzer-minimized crash reproducers
-│   ├── known/                           # Repoducers for known upstream issues
-│   ├── reports/                         # Detailed Markdown vulnerability reports (FINDING-001 to 012)
-│   ├── reproducers/                     # Packaged standalone reproducers
-│   ├── trials/                          # Raw execution logs, telemetry, and metadata for 15 trials
-│   │   ├── byte_trial_1/ .. 5/          # Baseline byte trials (raw logs, corpus, crashes)
-│   │   ├── struct_trial_1/ .. 5/        # Pure structure trials
-│   │   └── hybrid_trial_1/ .. 5/        # 4-way hybrid trials
-│   └── coverage_report/                 # llvm-cov source coverage summaries and HTML reports
-├── fuzz/                                # Fuzz harnesses, custom mutators, and safety oracles
+│   ├── reports/                         # Markdown vulnerability reports (FINDING-001 to 012)
+│   └── trials/                          # Historical experimental trials
+├── fuzz/                                # Fuzz harnesses, custom mutators, and schedulers
 │   ├── asset_exerciser.cpp / .hpp       # Type-dispatched accessor iteration engine
 │   ├── base64_fuzzer.cpp                # Base64 SIMD differential micro-target
 │   ├── coverage_runner.cpp              # Corpus coverage replay runner
-│   ├── custom_mutator.cpp / .hpp        # 4-way hybrid mutator (25/25/40/10)
-│   ├── deep_fuzzer.cpp                  # Primary deep fuzz target
-│   ├── fuzz_common.hpp                  # Envelope parsing (splitEnvelope) and 8 profile definitions
+│   ├── custom_mutator.cpp / .hpp        # Hybrid mutator with dynamic scheduler dispatch
+│   ├── deep_fuzzer.cpp                  # Primary deep fuzz target with stage recording
+│   ├── fuzz_common.hpp                  # Envelope parsing (splitEnvelope) and 8 profiles
 │   ├── glb_parser.cpp / .hpp            # Binary GLB container chunk unpacker/repacker
 │   ├── guarded_buffer_adapter.cpp/.hpp  # Isolated bufferView allocator with ASan redzones
+│   ├── hash_util.hpp                    # Shared 64-bit FNV-1a content hash
+│   ├── mutation_scheduler.cpp / .hpp    # Discounted-UCB scheduler and Operator Registry
+│   ├── mutation_telemetry.cpp / .hpp    # In-memory FIFO provenance map and stage recorder
 │   ├── parser_fuzzer.cpp                # Baseline parser target
 │   ├── reference_decoder.cpp / .hpp     # Checked integer arithmetic accessor extent oracle
-│   ├── telemetry.cpp / .hpp             # In-memory execution, rejection, and violation telemetry
+│   ├── telemetry.cpp / .hpp             # Execution, rejection, and violation telemetry
 │   └── uri_fuzzer.cpp                   # URIView RFC parsing micro-target
 ├── generator/
 │   └── gltf_generator.cpp / .hpp        # Procedural mesh, box, and sparse glTF/GLB seed generator
 ├── poc_f011.cpp                         # Standalone C++ PoC for Novel Zero-Day F011
-├── poc_base64_oob.cpp                   # Standalone C++ PoC for Novel Base64 LUT OOB (Candidate B)
-├── scripts/                             # Automation scripts for build, fuzz, campaign, and triage
+├── poc_base64_oob.cpp                   # Standalone C++ PoC for Novel Base64 LUT OOB
+├── scripts/                             # Automation scripts
 │   ├── build.sh                         # Multi-target CMake build driver
-│   ├── campaign.sh                      # 15-trial multi-arm campaign runner
+│   ├── campaign.sh                      # Multi-trial bash campaign runner
+│   ├── campaign_manager.py              # Supervised epoch runner & UCB policy updater
+│   ├── campaign_policy.example.json     # Campaign configuration schema
 │   ├── coverage.sh                      # llvm-profdata and llvm-cov report generator
 │   ├── evaluate_campaign.py             # Campaign data processing and statistical audit
 │   ├── fuzz.sh                          # Single fuzzer invocation wrapper
@@ -198,167 +274,134 @@ src/
 │   ├── minimize.sh                      # libFuzzer crash minimization wrapper
 │   ├── prepare_seeds.py                 # Algorithmic seed corpus generator
 │   ├── replay.sh                        # Standalone crash reproducer
-│   ├── triage.py                        # Automated ASan log parser and deduplication engine
-│   ├── triage.sh                        # Crash corpus triage driver
-│   └── validate.sh                      # Testbed verification and sanity runner
-└── tests/                               # GoogleTest test suites
-    ├── adapter_tests.cpp                # Unit tests for GuardedBufferAdapter redzone detection
-    ├── base64_tests.cpp                 # Unit tests for base64 decoding correctness
-    ├── generator_tests.cpp              # Unit tests for procedural glTF/GLB seed generation
-    ├── glb_tests.cpp                    # Unit tests for GLB chunk parsing and re-serialization
-    ├── mutator_tests.cpp                # Unit tests for AST preservation and corruption
-    └── uri_tests.cpp                    # Unit tests for URIView parsing
+│   ├── saturation_monitor.py            # 6-state conservative saturation monitor
+│   ├── test_adaptive_fuzzer.py          # Python test suite for scheduler & saturation
+│   ├── triage.py                        # Symbolized crash stack triage & dedup
+│   ├── triage.sh                        # Triage shell wrapper
+│   └── validate.sh                      # Environment and dependency verification
+└── tests/                               # Standalone C++ unit test suites
+    ├── adapter_tests.cpp                # GuardedBufferDataAdapter bounds tests
+    ├── base64_tests.cpp                 # Base64 SIMD vs fallback parity tests
+    ├── generator_tests.cpp              # Procedural generator validation tests
+    ├── glb_tests.cpp                    # Binary GLB roundtrip and repair tests
+    ├── mutator_tests.cpp                # Custom mutator deterministic tests
+    ├── scheduler_tests.cpp              # Discounted-UCB, FNV-1a vectors, and provenance tests
+    └── uri_tests.cpp                    # URIView RFC parsing tests
 ```
 
 ---
 
-## 5. Step-by-Step Run Steps
+## 7. Build and Verification Instructions
 
-All steps below are executed from within the `src/` directory inside a WSL2 Ubuntu or Linux environment.
+All commands are executed from the `src/` directory in a WSL2 Ubuntu or Linux environment:
 
-### 5.1 Step 1: Initialize Submodules and Dependencies
+### Step 1: Build Targets with Sanitizers
 ```bash
-# Ensure upstream fastgltf submodule is checked out at commit 705564d
-git submodule update --init --recursive
-```
+cd src
 
-### 5.2 Step 2: Build the Targets
-The project supports three distinct build profiles via `scripts/build.sh`:
-
-```bash
-# 1. Build primary ASan + UBSan target (Debug, asserts enabled)
+# Build all fuzz targets and unit tests with Clang 18.1.3 + ASan + UBSan
 ./scripts/build.sh asan
-
-# 2. Build Release Sanitizer target (-O3 -DNDEBUG, asserts compiled out)
-# (Reveals true memory corruptions such as Candidate B)
-./scripts/build.sh release-asan
-
-# 3. Build Source Coverage Instrumentation (for llvm-cov)
-./scripts/build.sh coverage
-
-# 4. Build all configurations
-./scripts/build.sh all
 ```
 
-To run unit tests verifying mutator and oracle correctness:
+### Step 2: Run C++ Unit Test Suites
 ```bash
-ninja -C build-asan test
+cd build-asan
+./scheduler_tests    # Verifies FNV-1a vectors, UCB math, floors, and provenance consumption
+./mutator_tests      # Verifies mutator determinism and bounds safety
+./glb_tests          # Verifies GLB chunk unpacker and structural repair
+./base64_tests       # Verifies AVX2 SIMD and fallback parity
+./adapter_tests      # Verifies ASan redzones and bounds checking
+./generator_tests    # Verifies procedural generator validity
+./uri_tests          # Verifies URIView RFC parsing
+cd ..
 ```
 
-### 5.3 Step 3: Seed Preparation & Corpus Minimization
+### Step 3: Run Python Unit Test Suite
 ```bash
-# Generate algorithmic seed models into corpus/generated/
-python3 scripts/prepare_seeds.py
-
-# Minimize and distill initial seed corpus using libFuzzer
-./scripts/merge_corpus.sh deep_fuzzer corpus/merged/initial corpus/seed
+python3 scripts/test_adaptive_fuzzer.py
 ```
-
-### 5.4 Step 4: Running Fuzzing Sessions
-Use `scripts/fuzz.sh` to run individual fuzzing sessions under a specific mutation mode:
-
-```bash
-# 1. Run baseline byte-level fuzzing (10 minutes)
-./scripts/fuzz.sh --target deep_fuzzer --mode byte --time 600
-
-# 2. Run pure structure-aware fuzzing (10 minutes)
-./scripts/fuzz.sh --target deep_fuzzer --mode struct --time 600
-
-# 3. Run 4-way hybrid fuzzing (10 minutes)
-./scripts/fuzz.sh --target deep_fuzzer --mode hybrid --time 600
-
-# 4. Micro-target fuzzing (URI parser & base64 SIMD differential)
-./scripts/fuzz.sh --target uri_fuzzer --time 60
-./scripts/fuzz.sh --target base64_fuzzer --time 60
-```
-
-### 5.5 Step 5: Reproducing the 15-Trial Research Campaign
-To execute the multi-arm campaign (5 trials $\times$ 3 modes, 30 minutes per trial) that produced the empirical numbers in the paper:
-
-```bash
-# Run the complete campaign across all 3 modes
-./scripts/campaign.sh --mode all --minutes 30 --trials 5
-```
-Raw trial logs, telemetry, and crash testcases are saved into `findings/trials/`.
-
-To recompute all statistical figures, median execution rates, and crash accounting:
-```bash
-python3 scripts/evaluate_campaign.py findings/trials
-```
-
-### 5.6 Step 6: Code Coverage Measurement
-Generate strict line and branch coverage reports isolating `fastgltf` from dependencies:
-```bash
-./scripts/coverage.sh --corpus corpus/seed --target deep_fuzzer
-```
-Outputs are written to:
-- `findings/coverage_report/fastgltf_coverage.txt` (Target library line & branch coverage)
-- `findings/coverage_report/simdjson_coverage.txt` (Dependency coverage)
-- `findings/coverage_report/html/index.html` (Interactive source visualization)
-
-### 5.7 Step 7: Automated Crash Triage & Deduplication
-To replay all crash artifacts, extract AddressSanitizer stack traces, deduplicate by root cause, and generate Markdown reports:
-```bash
-./scripts/triage.sh findings/crashes
-```
-Reports are written to `findings/reports/FINDING-001.md` through `FINDING-012.md` and indexed in `findings/index.csv`.
-
-To minimize a specific crash testcase:
-```bash
-./scripts/minimize.sh findings/crashes/crash-db0170fae561bcc1186860580e462803e93ecac1 deep_fuzzer asan
-```
+This runs 8 unit test suites verifying:
+- Shared 64-bit FNV-1a test vectors matching C++ (`hash_util.hpp`)
+- Probability normalization with minimum floors and disabled arm handling
+- Discounted-UCB reward accrual, decay, and exploration bonus
+- Multi-subprocess log parsing and restart-resilient execution accounting
+- Robustness against malformed or truncated logs
+- Exact corpus promotion matching against the provenance ledger
+- 6-state saturation monitor state transitions and recovery sequences
+- Fixed baseline (25/25/40/10) preservation
 
 ---
 
-## 6. Reproducing Key Security Findings & Standalone PoCs
+## 8. Running Campaigns Across the 4 Comparative Modes
 
-The fuzzer uncovered two critical, novel security vulnerabilities in `fastgltf`. Standalone C++ reproducers requiring no fuzzer engine are included at the root of `src/`.
+The campaign manager (`scripts/campaign_manager.py`) coordinates epoch execution, child process supervision, telemetry collection, and report generation:
 
-### 6.1 Reproducing Novel Zero-Day F011: `Parser::generateMeshIndices` Heap OOB Read
-
-- **Vulnerability:** Unchecked `POSITION` accessor index in `Parser::generateMeshIndices` (`external/fastgltf/src/fastgltf.cpp:872`).
-- **Trigger:** Calling `loadGltf(..., Options::GenerateMeshIndices)` on an asset where a primitive's `POSITION` attribute points to an out-of-bounds accessor index.
-- **Impact:** Crashes *inside* `loadGltf()` before returning an `Asset`, completely bypassing caller-side `fastgltf::validate(asset)`.
-- **Status:** Present on `v0.9.1` and upstream `main` (`ee8672f`).
-
-**Compile and run standalone PoC:**
 ```bash
+# Mode 1: Baseline Fixed Schedule (25/25/40/10)
+python3 scripts/campaign_manager.py \
+  --mode fixed \
+  --target deep_fuzzer \
+  --output-dir findings/campaign_fixed \
+  --epoch-seconds 300 \
+  --hard-max-seconds 7200
+
+# Mode 2: Dynamic Discounted-UCB Adaptive Fuzzer
+python3 scripts/campaign_manager.py \
+  --mode adaptive \
+  --target deep_fuzzer \
+  --output-dir findings/campaign_adaptive \
+  --epoch-seconds 300 \
+  --hard-max-seconds 7200
+
+# Mode 3: Fixed Baseline with Conservative Saturation Monitor
+python3 scripts/campaign_manager.py \
+  --mode fixed_with_saturation \
+  --target deep_fuzzer \
+  --output-dir findings/campaign_fixed_sat \
+  --epoch-seconds 300 \
+  --hard-max-seconds 7200
+
+# Mode 4: Full Adaptive Hybrid Fuzzer with Saturation Monitor
+python3 scripts/campaign_manager.py \
+  --mode adaptive_with_saturation \
+  --target deep_fuzzer \
+  --output-dir findings/campaign_adaptive_sat \
+  --epoch-seconds 300 \
+  --hard-max-seconds 7200
+```
+
+### Campaign Output Deliverables:
+Every campaign output directory contains:
+- `config_used.json`: Complete configuration used.
+- `policy_epoch_XXX.json`: Serialized scheduler weights for each epoch.
+- `epoch_XXX.log`: Raw stdout/stderr logs from all subprocesses within the epoch.
+- `epoch_XXX_metrics.json`: Detailed executions, restarts, coverage, promotions, and stage outcomes.
+- `epoch_XXX_telemetry.json`: In-memory telemetry snapshot and provenance ledger.
+- `corpus_manifest.json`: Snapshot of all corpus seeds with FNV-1a hashes, sizes, and operator attribution.
+- `findings/crashes/`: Captured crash artifacts.
+- `campaign_summary.json`: Complete machine-readable campaign metrics and saturation decision logs.
+- `campaign_report.md`: Formatted Markdown report with epoch progression tables.
+
+---
+
+## 9. Reproducing Discovered Vulnerabilities
+
+### Novel Zero-Day F011: Heap Out-of-Bounds Read in `Parser::generateMeshIndices`
+```bash
+# Compile standalone proof-of-concept
 clang++ -std=c++17 -fsanitize=address,undefined -g -O0 \
   -Iexternal/fastgltf/include poc_f011.cpp \
   -Lbuild-asan/external/fastgltf -lfastgltf -o poc_f011
 
+# Trigger vulnerability with minimized crash artifact
 ./poc_f011 findings/crashes/crash-db0170fae561bcc1186860580e462803e93ecac1
 ```
-**Expected Output:** Immediate AddressSanitizer abort: `READ of size 8 at 0x513000000408 in fastgltf::Parser::generateMeshIndices`.
 
-### 6.2 Reproducing Candidate B: Base64 LUT Out-of-Bounds Read / Corrupted Heap Write
-
-- **Vulnerability:** 128-byte lookup table `base64lut` in `external/fastgltf/src/base64.cpp:382`.
-- **Trigger:** High-byte / non-ASCII character ($\ge 128$) inside an embedded base64 Data URI.
-- **Impact:** Under Release builds (`-DNDEBUG`), the debug assertion is compiled out. The decoder reads out-of-bounds in `.rodata`, corrupts chunk calculations, and triggers a heap-buffer-overflow write of size 1 (`findings/reports/FINDING-006.md`).
-- **Status:** Present on `v0.9.1` and upstream `main`.
-
-**Compile and run standalone PoC:**
+### Novel Finding: Base64 Lookup Table Out-of-Bounds Read
 ```bash
-clang++ -std=c++17 -O3 -DNDEBUG -fsanitize=address,undefined -g \
+clang++ -std=c++17 -fsanitize=address,undefined -g -O0 \
   -Iexternal/fastgltf/include poc_base64_oob.cpp \
-  -Lbuild-release-asan/external/fastgltf -lfastgltf -o poc_base64_oob
+  -Lbuild-asan/external/fastgltf -lfastgltf -o poc_base64_oob
 
-./poc_base64_oob bad
+./poc_base64_oob findings/crashes/crash-9ea971d643fe14c0048d3bc354cb432e185ae144
 ```
-
----
-
-## 7. Verified Empirical Findings Summary
-
-All figures below are derived from raw logs in `findings/trials/` and `findings/coverage_report/`:
-
-| Metric | Byte (Baseline) | Struct | Hybrid (Our Approach) |
-| :--- | :---: | :---: | :---: |
-| **Cumulative Executions (15 trials)** | 197,088 | 181,934 | **262,739** |
-| **Throughput (exec/s)** | 109.5 | 101.1 | **145.9** |
-| **Target Branch Coverage** | 38.2% | 44.1% | **49.6%** (+11.4%) |
-| **Target Line Coverage** | 41.5% | 47.8% | **53.2%** (+11.7%) |
-| **Novel Zero-Day Discovered** | No | Yes (F011) | **Yes (F011 + Candidate B)** |
-
-*For complete architectural analysis, triage regex audit, and statistical evaluations, see [`FUZZER_PROJECT_TECHNICAL_DOSSIER.md`](FUZZER_PROJECT_TECHNICAL_DOSSIER.md).*

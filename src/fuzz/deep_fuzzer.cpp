@@ -1,6 +1,7 @@
 #include "fuzz_common.hpp"
 #include "asset_exerciser.hpp"
 #include "telemetry.hpp"
+#include "mutation_telemetry.hpp"
 
 #include <fastgltf/core.hpp>
 #include <cstdint>
@@ -24,6 +25,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
         return 0;
     }
 
+    // Provenance consumption: consumes pending record once so subsequent replay
+    // of the same corpus bytes does not inherit stale attribution.
+    fastgltf_fuzz::OperatorId op = fastgltf_fuzz::OperatorId::ByteLibFuzzer;
+    fastgltf_fuzz::OperatorFamily fam = fastgltf_fuzz::OperatorFamily::Byte;
+    bool hasProvenance = fastgltf_fuzz::MutationTelemetry::instance().consumeProvenance(payload, payloadSize, op, fam);
+    fastgltf_fuzz::StageRecorder stageRecorder(op, hasProvenance);
+
     // GltfDataBuffer lifetime is maintained for the complete testcase duration
     auto bufferExpected = fastgltf::GltfDataBuffer::FromBytes(
         reinterpret_cast<const std::byte*>(payload), payloadSize);
@@ -35,9 +43,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     auto& dataBuffer = bufferExpected.get();
 
     // Parser lifetime is maintained for the complete testcase duration
-    // (Parser owns GLB-related buffer states and data source allocations)
     fastgltf::Parser parser(fastgltf::Extensions::None);
     fastgltf::Options options = fastgltf_fuzz::getOptionsForProfile(profile);
+
+    if (fastgltf::hasBit(options, fastgltf::Options::GenerateMeshIndices)) {
+        stageRecorder.addFlag(fastgltf_fuzz::STAGE_MESH_INDICES);
+    }
 
     auto assetExpected = parser.loadGltf(dataBuffer, {}, options);
 
@@ -46,22 +57,23 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
         return 0;
     }
 
+    stageRecorder.addFlag(fastgltf_fuzz::STAGE_PARSED);
+
     auto& asset = assetExpected.get();
     fastgltf_fuzz::Telemetry::instance().recordParseSuccess(asset);
 
     // Explicitly validate asset invariants before exercising accessors.
-    // In fastgltf, loadGltf() performs structural parsing, while validate()
-    // verifies accessor indices, bufferView bounds, and buffer alignments.
-    // Calling validate() prevents shallow crashes on unvalidated assets and
-    // allows the fuzzer to explore deep asset processing continuously.
     auto validationError = fastgltf::validate(asset);
     if (validationError != fastgltf::Error::None) {
         fastgltf_fuzz::Telemetry::instance().recordParseError(validationError);
         return 0;
     }
 
+    stageRecorder.addFlag(fastgltf_fuzz::STAGE_VALIDATED);
+
     // Deep bounded accessor exercise with Default and Guarded BufferDataAdapters
     fastgltf_fuzz::exerciseAsset(asset);
+    stageRecorder.addFlag(fastgltf_fuzz::STAGE_ACCESSOR_EXERCISED);
 
     return 0;
 }

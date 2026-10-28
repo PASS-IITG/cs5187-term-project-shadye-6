@@ -1,0 +1,44 @@
+# Build artifacts
+build-*/
+build/
+bin/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+compile_commands.json
+
+# CMake temporary files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.ninja
+.ninja_*
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Fuzzing runtime findings & logs
+findings/trials/
+findings/campaign_runs/
+findings/crashes/crash-*
+findings/timeouts/
+corpus/work/
+corpus/merged/
+*.profraw
+*.profdata
+*.log
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+

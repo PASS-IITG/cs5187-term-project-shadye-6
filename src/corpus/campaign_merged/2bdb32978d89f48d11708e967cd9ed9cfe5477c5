@@ -1,0 +1,9 @@
+{
+  "asset": {"version": "2.0"},
+  "nodes": [
+    {"children": [1], "translation": [1.0, 2.0, 3.0]},
+    {"KHR_texture_transfoKHR_materials_clearcoatrmmatrix": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]}
+  ],
+  "scenes": [{"nodes": [0]}],
+  "sdata:application/gltf-buffer;base64,cene": 5
+}

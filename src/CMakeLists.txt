@@ -55,6 +55,8 @@ target_link_options(fastgltf PRIVATE ${TARGET_LINK_FLAGS})
 # Shared fuzzer support library
 add_library(fuzz_support STATIC
     fuzz/telemetry.cpp
+    fuzz/mutation_telemetry.cpp
+    fuzz/mutation_scheduler.cpp
     fuzz/glb_parser.cpp
     fuzz/reference_decoder.cpp
     fuzz/guarded_buffer_adapter.cpp
@@ -120,6 +122,11 @@ if (BUILD_UNIT_TESTS)
     if (ENABLE_COVERAGE)
         list(APPEND TEST_FLAGS "-fprofile-instr-generate" "-fcoverage-mapping")
     endif()
+
+    add_executable(scheduler_tests tests/scheduler_tests.cpp)
+    target_link_libraries(scheduler_tests PRIVATE fuzz_support fuzz_mutator)
+    target_compile_options(scheduler_tests PRIVATE ${TEST_FLAGS})
+    target_link_options(scheduler_tests PRIVATE ${TEST_FLAGS})
 
     add_executable(mutator_tests tests/mutator_tests.cpp)
     target_link_libraries(mutator_tests PRIVATE fuzz_mutator)
