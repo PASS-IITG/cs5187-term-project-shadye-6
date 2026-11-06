@@ -1,0 +1,12 @@
+{
+  "asset": {"version": "2.0"},
+  "buffers": [{"byteLength": 44, "uri": "data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAPwAAgD8AAAAAAAABAAIAAAA="}],
+  "bufferViews": [
+    {"buffer": 0, "byteOffset": 0, "byteLength": 36, "target": 34962},
+    {"ew": 0, "bytecomponentType": 5123, "count": 3, "type": "SCALAR", "max": [2], "min": [0]}
+  ],
+  "meshes": [{"primitives": [{"attributes": {"POSITION": 0}, "indices": 1}]}],
+  "nodes": [{"mesh": 0}],
+  "scenes": [{"nodes": [0]}],
+  "KHR_node_visibilityscene": 0
+}

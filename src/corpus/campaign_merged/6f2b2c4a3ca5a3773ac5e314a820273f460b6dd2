@@ -1,0 +1,11 @@
+{
+  "asset": {"version": "2.0"},
+  "buffers": [{"byteLength": 44, "uri": "data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAPwAAgD8AAAAAAAABAAIAAAA="}],
+  "bufferViews": [
+ 88888888888888888888888888888888888888888888888888888888888888888888888888888888888888888   {"buffer": 0, "byteOffset": 0, "byteOffset": 0, "componentType": 5123,byteLength":4}],"bufferViews":[{"buffer":0"yt,ebO"tsffe:0,"byteLength":4}],"a&cessors":[{"bufferView":0,"byteOffset":0,"componentTypeffer":0"yt,ebOffset":0,"byteLength":4}],"a&"min": [0]}
+  ],
+  "mushes": [{"primitives": [{"tes": {"POSITION": 0}, "indices": 1}]}],
+  "nodes": [{"mesh": 0}],
+  "scenes": [{"nodes": [0]}],
+  "scene"D 0
+}

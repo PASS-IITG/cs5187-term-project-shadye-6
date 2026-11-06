@@ -1,0 +1,21 @@
+{
+  "total_executions": 399,
+  "parse_success_count": 59,
+  "parse_failure_count": 338,
+  "assets_with_buffers": 33,
+  "assets_with_bufferviews": 33,
+  "assets_with_accessors": 32,
+  "accessors_exercised": 78,
+  "sparse_accessors_exercised": 12,
+  "extent_violations_detected": 3,
+  "metamorphic_mismatches": 0,
+  "error_breakdown": {
+    "InvalidJson": 230,
+    "InvalidGltf": 44,
+    "InvalidOrMissingAssetField": 12,
+    "InvalidGLB": 12,
+    "UnsupportedVersion": 10,
+    "InvalidURI": 6,
+    "InvalidFileData": 24
+  }
+}
