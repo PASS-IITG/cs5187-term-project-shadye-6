@@ -1,0 +1,11 @@
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Dispta; n---: form-data; nmae="text"
+
+Hello
+------WebKitFgW--
+gW
+Content-Disposition: form-data; name="upload"; filename="hello.txt"
+Content-Type: text/plain
+
+Helóê”ﬂDronog multipart fuzzer!
+------WebKitFormBoundary7MA4YWxkTrZu0gW--

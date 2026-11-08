@@ -1,0 +1,18 @@
+POST / HTTP/1.1
+Hos ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿõÿÿÿÿnsfer-E
+
+GET /echo HTTP/1.1
+Host: localost: localhost
+
+GET /echo HTTP11
+o/H.st: localhost
+Content-Length: 1
+
+hos
+t
+Content-Length: 1
+
+te
+0
+
+

@@ -1,0 +1,7 @@
+POST / HTTP/1.0
+chSOST
+PROPFIND lnk/ HTTP/1.0
+chSOSOST
+PROPFIND lnk/ HTTP/1.0
+d0
+5/

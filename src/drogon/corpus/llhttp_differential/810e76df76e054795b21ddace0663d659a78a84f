@@ -1,0 +1,18 @@
+GET //2.1
+-ost:P/
+Z:s1PT/.1
+1Host:1.1
+Htst:P/
+Z:s1PT/.1
+1Host:1.1
+Ht:P/
+Z:sTP/1.1
+1Host:1.1
+HEAD:Œ
+HoPATst:P
+Z:P/1.1
+1Host:1.1
+HEAD:Œ
+HoPATst:P//
+H:*1.1
+1HCost:1

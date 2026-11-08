@@ -1,0 +1,226 @@
+{
+  "start_time": 1793620484.196382,
+  "duration": 3600,
+  "targets": {
+    "fuzz_http_request_raw": {
+      "pid": 19,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_http_request_raw",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/http_request",
+        "-max_total_time=562",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/http.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_http_request_raw.log"
+    },
+    "fuzz_http_request_fragmented": {
+      "pid": 20,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_http_request_fragmented",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/http_request_fragmented",
+        "-max_total_time=562",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/http.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_http_request_fragmented.log"
+    },
+    "fuzz_http_response_raw": {
+      "pid": 21,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_http_response_raw",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/http_response",
+        "-max_total_time=562",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/http.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_http_response_raw.log"
+    },
+    "fuzz_http_response_fragmented": {
+      "pid": 22,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_http_response_fragmented",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/http_response_fragmented",
+        "-max_total_time=562",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/http.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_http_response_fragmented.log"
+    },
+    "fuzz_multipart": {
+      "pid": 23,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_multipart",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/multipart",
+        "-max_total_time=562",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/multipart.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_multipart.log"
+    },
+    "fuzz_multipart_stream": {
+      "pid": 16,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_multipart_stream",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/multipart_stream",
+        "-max_total_time=1309",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/multipart.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_multipart_stream.log"
+    },
+    "fuzz_websocket_frame": {
+      "pid": 17,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_websocket_frame",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/websocket",
+        "-max_total_time=1309",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/websocket.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_websocket_frame.log"
+    },
+    "fuzz_websocket_session": {
+      "pid": 18,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_websocket_session",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/websocket_session",
+        "-max_total_time=1309",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/websocket.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_websocket_session.log"
+    },
+    "fuzz_llhttp_differential": {
+      "pid": 19,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_llhttp_differential",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/llhttp_differential",
+        "-max_total_time=1309",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/http.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_llhttp_differential.log"
+    },
+    "fuzz_kitchen_sink": {
+      "pid": 20,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_kitchen_sink",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/kitchen_sink",
+        "-max_total_time=1309",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/http.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_kitchen_sink.log"
+    },
+    "fuzz_response_builder": {
+      "pid": 21,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_response_builder",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/response_builder",
+        "-max_total_time=1309",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/http.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_response_builder.log"
+    },
+    "fuzz_url": {
+      "pid": 22,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_url",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/url",
+        "-max_total_time=1309",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1",
+        "-dict=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/dictionaries/uri.dict"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_url.log"
+    },
+    "fuzz_cookie": {
+      "pid": 23,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_cookie",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/cookie",
+        "-max_total_time=1309",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_cookie.log"
+    },
+    "fuzz_range": {
+      "pid": 24,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_range",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/range",
+        "-max_total_time=562",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_range.log"
+    },
+    "fuzz_utilities": {
+      "pid": 25,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_utilities",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/utilities",
+        "-max_total_time=562",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_utilities.log"
+    },
+    "fuzz_filesystem": {
+      "pid": 26,
+      "command": [
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/build/asan/fuzz_filesystem",
+        "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/corpus/filesystem",
+        "-max_total_time=562",
+        "-timeout=10",
+        "-rss_limit_mb=512",
+        "-artifact_prefix=/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/",
+        "-print_final_stats=1"
+      ],
+      "log": "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/reports/parallel_fuzz_filesystem.log"
+    }
+  }
+}

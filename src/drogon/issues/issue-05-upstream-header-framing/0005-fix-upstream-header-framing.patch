@@ -1,0 +1,33 @@
+From: Drogon-Fuzz Security Team <security@drogon.org>
+Subject: [PATCH] Fix HTTP header parsing boundary flaw and enforce 400 Bad Request on malformed headers
+
+---
+ lib/src/HttpRequestParser.cc  | 11 +++++++++--
+ lib/src/HttpResponseParser.cc | 11 +++++++++--
+ 2 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/lib/src/HttpRequestParser.cc b/lib/src/HttpRequestParser.cc
+index af124d5..5e219ba 100644
+--- a/lib/src/HttpRequestParser.cc
++++ b/lib/src/HttpRequestParser.cc
+@@ -207,9 +207,16 @@ HttpRequestParseResult HttpRequestParser::parseRequest(trantor::MsgBuffer *buf)
+         while (crlf)
+         {
+             std::string line(buf->peek(), crlf - buf->peek());
+-            if (!request_->addHeader(line))
++            if (line.empty())
+             {
++                buf->retrieveUntil(crlf + 2);
+                 state_ = HttpRequestParseState::kGotAllHeaders;
+                 break;
+             }
++            else if (!request_->addHeader(line))
++            {
++                LOG_ERROR << "Malformed header line: " << line;
++                return HttpRequestParseResult::kBadMessage;
++            }
+             buf->retrieveUntil(crlf + 2);
+             crlf = buf->findCRLF();
+-- 
+2.43.0
+

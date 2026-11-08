@@ -1,0 +1,21 @@
+GET / HTTP/1.1
+Host: local/1.±
+Host: localhost
+
+GET /eO¦GETOOcho HTTP/1.1
+Èost:!!#!!!!!!!ãÞÞ¼¼¼¼¼CCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: localo loc!!!!!!!!!!!!!!!CCGCCCCCCCCCCCCCCCCCC!!!!!!!!!!!!!CCCCCCCCCCCCCCt0eft:\xiP	host
+
+GET /eNOOcho HTTP/1.0
+Èost: CCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: l/calo lo
+calhoóCCCCCCCCCCCCCCCoót
+Cont0eft:LxiP	S 4
+
+test

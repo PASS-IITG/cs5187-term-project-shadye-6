@@ -1,0 +1,8 @@
+GET / HTTP/1.1
+Host:ocalhost
+
+GET /echo HTTP/1.1
+Hostn0o
+-ånLetngth: 4
+
+st

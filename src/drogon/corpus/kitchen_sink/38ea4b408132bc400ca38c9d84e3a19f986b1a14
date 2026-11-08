@@ -1,0 +1,13 @@
+GET / HTTP/1.1
+:o
+:o HP/1.1
+:o
+:o HTTP/1.1
+:P/1.1
+GETz:o HP/1.1
+:o
+:o HTTP/o
+:o HTTP/1.1
+:P/1.1
+GETz:o HP/1.1
+:1.1 P/0.ÿ

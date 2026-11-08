@@ -1,0 +1,37 @@
+From: Drogon-Fuzz Security Team <security@drogon.org>
+Subject: [PATCH] Fix undefined behavior on non-standard HTTP status code in HttpResponseParser
+
+---
+ lib/inc/drogon/HttpTypes.h      | 2 +-
+ lib/src/HttpResponseParser.cc   | 6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/lib/inc/drogon/HttpTypes.h b/lib/inc/drogon/HttpTypes.h
+index b68e91f..d18ae47 100644
+--- a/lib/inc/drogon/HttpTypes.h
++++ b/lib/inc/drogon/HttpTypes.h
+@@ -24,7 +24,7 @@ namespace drogon
+ {
+-enum HttpStatusCode
++enum HttpStatusCode : int
+ {
+     kUnknown = 0,
+     k100Continue = 100,
+diff --git a/lib/src/HttpResponseParser.cc b/lib/src/HttpResponseParser.cc
+index 4519f8a..ce2911b 100644
+--- a/lib/src/HttpResponseParser.cc
++++ b/lib/src/HttpResponseParser.cc
+@@ -69,6 +69,12 @@ bool HttpResponseParser::processResponseLine(const char *begin,
+         std::string status_code(start, space - start);
+         std::string status_message(space + 1, end - space - 1);
+         LOG_TRACE << status_code << " " << status_message;
+         auto code = atoi(status_code.c_str());
++        if (code < 100 || code > 599)
++        {
++            LOG_ERROR << "Invalid HTTP status code: " << code;
++            return false;
++        }
+         responsePtr_->setStatusCode(HttpStatusCode(code));
+-- 
+2.43.0
+

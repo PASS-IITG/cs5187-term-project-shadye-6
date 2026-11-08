@@ -1,0 +1,10 @@
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition:ion: form-dÿta; name="username"
+
+drogon_user
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-FormBoundary7MA4YWxkTrZu0gW--MA4YWxkTrZunm="hello.txt"
+Content-TypeB text/plain
+
+Hello, Drogon multipart fuzzer!
+------WebKitFormBoundary7MA4YWxkTrZu0gW--

@@ -1,0 +1,62 @@
+GET / HTTP/1.1
+Host: local/0.±
+Host: localhost
+
+GET /eOOOcho HTTP/1.1
+Èost:!!!!!!!!!!!!!CCCCCCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: localo loc!!!!!!!GET / HTTP/1.1
+Host: local/1.±
+Host: localhost
+
+GET /eOOOcho HTTP/1.1
+Èost:!!!!!!!!!!!!!CCCCCCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: localo loc!!!!!!!!!!!!!!!!!!CCCCCCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: localoót
+CoCCCC
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: localo loc!!!!!!!!!!!!!!!!!!CCCCCCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: localoót
+CoCCCCCCCCCCCCCCCCCCC: localhost
+
+GET /eOOOcho HTTP/1.1
+Èost:CCCCCCCCCCCCCCCCCCCGCCCCCCCCCCCCCCCCCCCCCCCCC!!!!!!!!!!!!!!!!!!!!!!!!!CCCCCCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: localCCCCCCCCCCCCCCCCCCCCCCCCC!!!!!!!!!!!!!CCCCCCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: l/calo localhoóCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCClhost
+
+GET /eOOOcho HTTP/1.1
+Èost:CCCCCCCCCCCCCCCCCCCGCCCCCCCCCCCCCCCCCCCCCCCCC!!!!!!!!!!!!!%!!!!!!!!!!!CCCCCCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: localCCCCCCCCCCCCCCCCCCCCCCCCC!!!!!!!!!!!!!CCCCCCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: l/calo localhoóCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCGCCCCCCCCCCCCCCCCCCCCCCCCC!!!!!!!!!!!!!!!!!!!!!!!!!CCCCCCCCCCCCCCCCt
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.0
+Èost: localoót
+Cont0eft:LxiP	S 4
+
+test
