@@ -1,0 +1,15 @@
+--- a/src/raudio.c
++++ b/src/raudio.c
+@@ -2153,6 +2153,12 @@ AudioStream LoadAudioStream(unsigned int sampleRate, unsigned int sampleSize, un
+     stream.sampleSize = sampleSize;
+     stream.channels = channels;
+
++    if ((sampleSize != 8) && (sampleSize != 16) && (sampleSize != 32))
++    {
++        TRACELOG(LOG_WARNING, "STREAM: Sample size %i bit not supported", sampleSize);
++        return stream;
++    }
++
+     ma_format formatIn = ((stream.sampleSize == 8)? ma_format_u8 : ((stream.sampleSize == 16)? ma_format_s16 : ma_format_f32));
+
+     // The size of a streaming buffer must be at least double the size of a period

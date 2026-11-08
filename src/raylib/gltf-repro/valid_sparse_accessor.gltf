@@ -1,0 +1,40 @@
+{
+  "asset": {"version": "2.0"},
+  "scenes": [{"nodes": [0]}],
+  "nodes": [{"mesh": 0}],
+  "meshes": [{
+    "primitives": [{
+      "attributes": {
+        "POSITION": 0
+      }
+    }]
+  }],
+  "accessors": [{
+    "componentType": 5126,
+    "count": 3,
+    "type": "VEC3",
+    "max": [1.0, 0.0, 0.0],
+    "min": [0.0, 0.0, 0.0],
+    "sparse": {
+      "count": 1,
+      "indices": {
+        "bufferView": 0,
+        "byteOffset": 0,
+        "componentType": 5125
+      },
+      "values": {
+        "bufferView": 1,
+        "byteOffset": 0
+      }
+    }
+  }],
+  "bufferViews": [
+    {"buffer": 0, "byteOffset": 0, "byteLength": 4},
+    {"buffer": 0, "byteOffset": 4, "byteLength": 12}
+  ],
+  "buffers": [{
+    "byteLength": 16,
+    "uri": "data:application/octet-stream;base64,AQAAAAAAAAAAAIA/AAAAAAAAAAA="
+  }]
+}
+

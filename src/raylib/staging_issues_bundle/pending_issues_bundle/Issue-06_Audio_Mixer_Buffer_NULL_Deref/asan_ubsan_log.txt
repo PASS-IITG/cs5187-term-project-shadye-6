@@ -1,0 +1,19 @@
+[Command]
+out/repro/fuzz_audio_wav work/crashes/fuzz_audio_wav/crash-4861785e7ac992f006798d7806ac5f3ec69012bd
+
+[Output]
+[run] /mnt/c/Users/dxksh/Desktop/swa/raylib/work/crashes/fuzz_audio_wav/crash-4861785e7ac992f006798d7806ac5f3ec69012bd (37681)
+/mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:2467:76: runtime error: null pointer passed as argument 2, which is declared to never be null
+/usr/include/string.h:44:28: note: nonnull attribute specified here
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:2467:76 
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==6277==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x754623588d8d bp 0x7fff7f3b0650 sp 0x7fff7f3afe08 T0)
+==6277==The signal is caused by a READ memory access. Hint: address points to the zero page.
+    #0 0x754623588d8d in ?? (/lib/x86_64-linux-gnu/libc.so.6+0x188d8d)
+    #1 0x59cfd18e31e6 in __asan_memcpy
+    #2 0x59cfd1a4a3c6 in ReadAudioBufferFramesInInternalFormat /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:2467:9
+    #3 0x59cfd1a4a3c6 in ReadAudioBufferFramesInMixingFormat /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:2550:58
+    #4 0x59cfd1a4a3c6 in OnSendAudioDataToDevice /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:2619:48
+SUMMARY: AddressSanitizer: SEGV in ReadAudioBufferFramesInInternalFormat
+==6277==ABORTING

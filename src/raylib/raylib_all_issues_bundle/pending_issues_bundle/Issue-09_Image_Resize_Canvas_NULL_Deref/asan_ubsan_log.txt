@@ -1,0 +1,11 @@
+=================================================================
+==10==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000000 (pc 0x64740746c076 bp 0x7ffe8486dbc0 sp 0x7ffe8486db80 T0)
+==10==The signal is caused by a WRITE memory access.
+==10==Hint: address points to the zero page.
+    #0 0x64740746c076 in SetPixelColor /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rtextures.c:5710:42
+    #1 0x64740746b3d5 in ImageResizeCanvas /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rtextures.c:1920:9
+    #2 0x647407342561 in LLVMFuzzerTestOneInput /mnt/c/Users/dxksh/Desktop/swa/raylib/harness/fuzz_image_ops.c:59:19
+    #3 0x6474073477f6 in run /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:19:48
+    #4 0x647407347531 in main /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:21:66
+
+SUMMARY: AddressSanitizer: SEGV in SetPixelColor (src/rtextures.c:5710:42)

@@ -1,0 +1,16 @@
+diff --git a/src/raudio.c b/src/raudio.c
+--- a/src/raudio.c
++++ b/src/raudio.c
+@@ -587,3 +587,8 @@ AudioBuffer *LoadAudioBuffer(ma_format format, ma_uint32 channels, ma_uint32 sa
+-    if (sizeInFrames > 0) audioBuffer->data = (unsigned char *)RL_CALLOC(sizeInFrames*channels*ma_get_bytes_per_sample(format), 1);
++    if (sizeInFrames > 0)
++    {
++        audioBuffer->data = (unsigned char *)RL_CALLOC(sizeInFrames*channels*ma_get_bytes_per_sample(format), 1);
++        if (audioBuffer->data == NULL) { RL_FREE(audioBuffer); return NULL; }
++    }
+@@ -1028,2 +1033,3 @@ bool IsSoundValid(Sound sound)
+         (sound.stream.buffer != NULL) &&    // Validate stream buffer
++        (sound.stream.buffer->data != NULL) && // Validate stream buffer data
+@@ -2464,2 +2470,3 @@ static void ReadAudioBufferFramesInInternalFormat(AudioBuffer *audioBuffer, void
++        if (audioBuffer->data == NULL) break;
+         memcpy((unsigned char *)framesOut + (framesRead*frameSizeInBytes), audioBuffer->data + (audioBuffer->frameCursorPos*frameSizeInBytes), framesToRead*frameSizeInBytes);

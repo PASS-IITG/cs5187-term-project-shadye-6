@@ -1,0 +1,18 @@
+=================================================================
+==10==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x533000019800 at pc 0x566b24d994f8 bp 0x7ffc6624c150 sp 0x7ffc6624b910
+WRITE of size 76800 at 0x533000019800 thread T0
+    #0 0x566b24d994f7 in __asan_memcpy (/mnt/c/Users/dxksh/Desktop/swa/raylib/out/repro/fuzz_audio_wav+0x20f4f7)
+    #1 0x566b24f0fb96 in UpdateAudioStreamInLockedState /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:2784:17
+    #2 0x566b24f0f371 in UpdateMusicStream /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:2071:9
+    #3 0x566b24f128d4 in LLVMFuzzerTestOneInput /mnt/c/Users/dxksh/Desktop/swa/raylib/harness/fuzz_audio.c:69:13
+    #4 0x566b24f80c96 in run /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:19:48
+    #5 0x566b24f809d1 in main /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:21:66
+
+0x533000019800 is located 0 bytes after 102400-byte region [0x533000000800,0x533000019800)
+allocated by thread T0 here:
+    #0 0x566b24d9b79d in calloc
+    #1 0x566b24f01c67 in LoadAudioBuffer /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:587:64
+    #2 0x566b24f0b4bd in LoadAudioStream /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:2171:21
+    #3 0x566b24f0b4bd in LoadMusicStreamFromMemory /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:1586:28
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow in __asan_memcpy

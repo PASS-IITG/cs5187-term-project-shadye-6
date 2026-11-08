@@ -1,0 +1,18 @@
+[Command]
+out/repro/fuzz_model_gltf reproducers/fuzz_model_gltf/crash-108c96cad8dc5b6fe690dea1fa54760acfaac4e5
+
+[Output]
+/mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:5788:33: runtime error: member access within null pointer of type 'cgltf_buffer_view'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:5788:33 
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==154==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000008 (pc 0x6465ed2d7314 bp 0x7ffec8f862f0 sp 0x7ffec8f862e0 T0)
+==154==The signal is caused by a READ memory access.
+Hint: address points to the zero page.
+    #0 in LoadGLTF /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:5788:33
+    #1 in LoadModel /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:642:19
+    #2 in LLVMFuzzerTestOneInput /mnt/c/Users/dxksh/Desktop/swa/raylib/harness/fuzz_model.c:48:19
+    #3 in run /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:19:48
+    #4 in main /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:21:66
+SUMMARY: AddressSanitizer: SEGV in LoadGLTF /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:5788:33
+==154==ABORTING

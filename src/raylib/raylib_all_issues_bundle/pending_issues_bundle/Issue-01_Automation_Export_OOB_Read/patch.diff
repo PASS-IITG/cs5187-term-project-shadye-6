@@ -1,0 +1,22 @@
+diff --git a/src/rcore.c b/src/rcore.c
+index a907e40..76f37d1 100644
+--- a/src/rcore.c
++++ b/src/rcore.c
+@@ -3755,11 +3755,14 @@ bool ExportAutomationEventList(AutomationEventList list, const char *fileName)
+     byteCount += sprintf(txtData + byteCount, "#\n\n");
+ 
+     // Add events data
+-    byteCount += sprintf(txtData + byteCount, "c %i\n", list.count);
++    byteCount += sprintf(txtData + byteCount, "c %u\n", list.count);
+     for (unsigned int i = 0; i < list.count; i++)
+     {
+-        byteCount += snprintf(txtData + byteCount, 256, "e %i %i %i %i %i %i // Event: %s\n", list.events[i].frame, list.events[i].type,
+-            list.events[i].params[0], list.events[i].params[1], list.events[i].params[2], list.events[i].params[3], autoEventTypeName[list.events[i].type]);
++        const char *eventTypeName = "UNKNOWN";
++        if (list.events[i].type < sizeof(autoEventTypeName)/sizeof(autoEventTypeName[0])) eventTypeName = autoEventTypeName[list.events[i].type];
++
++        byteCount += snprintf(txtData + byteCount, 256, "e %u %u %i %i %i %i // Event: %s\n", list.events[i].frame, list.events[i].type,
++            list.events[i].params[0], list.events[i].params[1], list.events[i].params[2], list.events[i].params[3], eventTypeName);
+     }
+ 
+     // NOTE: Text data size exported is determined by '\0' (NULL) character
