@@ -1,12 +1,12 @@
-# DNSFuzz: Cross-Domain Adaptive Fuzzer Codebase (`src/`)
+# QTFuzz: Cross-Domain Adaptive Fuzzer Codebase (`src/`)
 
-This directory contains the complete source code, mutation operators, multi-armed bandit schedulers, headless in-memory shims, subsystem fuzz harnesses, campaign orchestration scripts, seed corpora, and vulnerability reproducers for **DNSFuzz**.
+This directory contains the complete source code, mutation operators, multi-armed bandit schedulers, headless in-memory shims, subsystem fuzz harnesses, campaign orchestration scripts, seed corpora, and vulnerability reproducers for **QTFuzz**.
 
 ---
 
 ## 1. Architectural Overview & Evolutionary Flow
 
-DNSFuzz was engineered to address a fundamental challenge in coverage-guided fuzzing: testing heterogeneous, multi-layered C and C++ software stacks without sacrificing execution speed or domain-specific structural intelligence. The project follows a three-phase evolutionary roadmap:
+QTFuzz was engineered to address a fundamental challenge in coverage-guided fuzzing: testing heterogeneous, multi-layered C and C++ software stacks without sacrificing execution speed or domain-specific structural intelligence. The project follows a three-phase evolutionary roadmap:
 
 ```
 [Phase 1: Base Engine]         [Phase 2: Multimedia Extension]      [Phase 3: Network Extension]
@@ -185,18 +185,18 @@ src/
 
 ## 5. Verified Vulnerabilities & Standalone Reproducers
 
-DNSFuzz uncovered **6 verified vulnerabilities** across the three subject systems. Each defect has a standalone, zero-dependency C/C++ reproducer that verifies the issue without requiring the fuzzer runtime.
+QTFuzz uncovered **6 verified vulnerabilities** across the three subject systems. Each defect has a standalone, zero-dependency C/C++ reproducer that verifies the issue without requiring the fuzzer runtime.
 
 ### Summary Table
 
 | ID | Subject | Component & Function | Vulnerability Classification | CWE | Upstream Status |
 | :---: | :--- | :--- | :--- | :---: | :--- |
-| **F1** | `fastgltf` | `Parser::generateMeshIndices` | Heap Buffer Overflow | CWE-122 | **Closed**; fixed in upstream commit |
-| **R1** | `raylib` | `swPopMatrix()` in `rlsw.h` | Matrix Stack Underflow | CWE-119 | **Acknowledged**; PR #6362 open |
-| **R2** | `raylib` | `ExportAutomationEventList()` | Out-of-Bounds Global Array Read | CWE-125 | **Acknowledged**; Issue #6378 |
-| **R3** | `raylib` | `LoadWaveSamples()` | NULL Pointer Dereference | CWE-476 | **Acknowledged**; PR #6374 open |
+| **F1** | `fastgltf` | `Parser::generateMeshIndices` | Heap Buffer Overflow | CWE-122 | **Closed**; fixed through commit by maintainer (Issue #160) |
+| **R1** | `raylib` | `swPopMatrix()` in `rlsw.h` | Matrix Stack Underflow | CWE-119 | **Acknowledged**; PR #6362 merged (Issue #6361) |
+| **R2** | `raylib` | `ExportAutomationEventList()` | Out-of-Bounds Global Array Read | CWE-125 | **Acknowledged**; maintainer fixed (Issue #6378) |
+| **R3** | `raylib` | `LoadWaveSamples()` | NULL Pointer Dereference | CWE-476 | **Acknowledged**; PR closed, maintainer fixed alternatively in commit 7639166 (Issue #6373) |
 | **D1** | `drogon` | `HttpFileImpl::save()` | Process Abort in `noexcept` Method | CWE-755 | **Closed**; PR #2662 merged |
-| **D2** | `drogon` | `HttpFileImpl::save()` | Out-of-Bounds Iterator Dereference | CWE-125 | **Closed**; PR #2656 / PR #2659 |
+| **D2** | `drogon` | `HttpFileImpl::save()` | Out-of-Bounds Iterator Dereference | CWE-125 | **Closed**; issue raised, fixed in commit by maintainer after raised (PR #2656) |
 
 ---
 
@@ -275,7 +275,7 @@ DNSFuzz uncovered **6 verified vulnerabilities** across the three subject system
 
 ## 6. Campaign Execution Metrics
 
-Across 24-hour evaluation campaigns on an x86_64 AMD workstation (16 logical cores, Ubuntu 24.04 LTS), DNSFuzz executed **807,520,128 cumulative inputs** across 59 target binaries:
+Across 24-hour evaluation campaigns on an x86_64 AMD workstation (16 logical cores, Ubuntu 24.04 LTS), QTFuzz executed **807,520,128 cumulative inputs** across 59 target binaries:
 
 | Subsystem | Targets | LoC | Total Iterations | Peak Throughput | Discovered Edges | Verified Defects |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
