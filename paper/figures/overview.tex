@@ -1,23 +1,76 @@
-%% Figure: overview of the tool. Steps left to right, loop dashed.
-%% Grayscale-safe (black lines, black!6 fill), \scriptsize text, numbered
-%% steps matching the "Step N" subsections.
+%% Overview of the unified fuzzer architecture and cross-domain extensions.
+%% Grayscale-safe, clean modern styling, publication-grade alignment with matched heights.
 \begin{tikzpicture}[
-    x=1cm, y=1cm, font=\scriptsize,
-    box/.style={draw, rounded corners=2pt, align=center, inner sep=2pt,
-                minimum height=9mm, text width=15mm, fill=white},
-    outbox/.style={draw, align=left, inner sep=2pt, fill=black!6,
-                text width=20mm, font=\tiny},
-    flow/.style={-{Stealth[length=1.6mm]}, line width=0.5pt},
-    back/.style={-{Stealth[length=1.6mm]}, line width=0.5pt, dash pattern=on 2pt off 1.5pt},
+    >=Stealth, font=\scriptsize,
+    titleheader/.style={
+      font=\tiny\bfseries, align=center, text width=32.5mm,
+      fill=black!10, draw=black!60, rounded corners=2pt, inner sep=2pt
+    },
+    stagecard/.style={
+      draw=black!70, rounded corners=2pt, align=left, inner sep=3pt,
+      text width=32.5mm, minimum height=16.5mm, fill=white, font=\tiny, line width=0.5pt
+    },
+    oraclecard/.style={
+      draw=black!75, rounded corners=2pt, align=center, inner sep=3.5pt,
+      text width=113mm, minimum height=9mm, fill=black!7, font=\tiny, line width=0.6pt
+    },
+    flow/.style={->, line width=0.6pt, draw=black!85},
+    back/.style={->, line width=0.6pt, dashed, draw=black!75},
+    extlabel/.style={
+      font=\tiny\bfseries, fill=white, inner sep=1pt, rounded corners=1pt,
+      draw=black!35
+    }
   ]
-  \node[box, text width=10mm] (in) at (0,0) {input};
-  \node[box] (s1) at (1.8,0) {\textbf{1} step one};
-  \node[box] (s2) at (3.8,0) {\textbf{2} step two};
-  \node[box] (s3) at (5.8,0) {\textbf{3} step three};
-  \node[outbox] (o) at (3.8,-1.6) {output one\\output two};
-  \draw[flow] (in) -- (s1);
-  \draw[flow] (s1) -- (s2);
-  \draw[flow] (s2) -- (s3);
-  \draw[flow] (s3.south) |- (o.east);
-  \draw[back] (s3.north) -- ++(0,0.35) -| node[pos=0.25, above] {repeat} (s2.north);
+  % Stage 1: Base Engine (fastgltf)
+  \node[titleheader] (h1) at (0, 0) {(1) Base Engine (\fastgltf)};
+  \node[stagecard, below=1.8mm of h1] (s1) {%
+    $\triangleright$ Structured AST Mutators\\
+    $\triangleright$ Binary Geometry Mutators\\
+    $\triangleright$ Discounted-UCB1 Bandit%
+  };
+
+  % Stage 2: Multimedia Extension (raylib)
+  \node[titleheader, right=7.5mm of h1] (h2) {(2) Multimedia (\raylib)};
+  \node[stagecard, below=1.8mm of h2] (s2) {%
+    $\triangleright$ 37 Subsystem Binaries\\
+    $\triangleright$ Headless \texttt{rlsw} Rasterizer\\
+    $\triangleright$ Virtual VFS \& Audio Pumps%
+  };
+
+  % Stage 3: Network Extension (drogon)
+  \node[titleheader, right=7.5mm of h2] (h3) {(3) Network I/O (\drogon)};
+  \node[stagecard, below=1.8mm of h3] (s3) {%
+    $\triangleright$ 19 Stateful Target Binaries\\
+    $\triangleright$ \texttt{MockTcpConnection} (0-sock)\\
+    $\triangleright$ Tail Slicing \& Sandboxing%
+  };
+
+  % Combined Oracle & Feedback Layer
+  \node[oraclecard, below=5.5mm of s2] (o) {%
+    \textbf{Sanitizer Oracle (ASan / UBSan) \& Linker Coverage Interception (\texttt{-Wl,--wrap})}\\[1.5pt]
+    Dual-channel edge telemetry $\bullet$ Crash triage engine $\bullet$ 16 discovered security defects%
+  };
+
+  % Horizontal extension flows between headers
+  \draw[flow] (h1.east) -- (h2.west) node[midway, extlabel] {extend};
+  \draw[flow] (h2.east) -- (h3.west) node[midway, extlabel] {extend};
+
+  % Downward execution paths into the oracle
+  \draw[flow] (s1.south) -- (s1.south |- o.north);
+  \draw[flow] (s2.south) -- (o.north);
+  \draw[flow] (s3.south) -- (s3.south |- o.north);
+
+  % Feedback loop from coverage interceptor back to the bandit scheduler
+  \draw[back] (o.west) -- ++(-4.5mm, 0) |- node[pos=0.25, left, font=\tiny\bfseries, align=right] {bandit\\reward} (s1.west);
+
+  % Background card frames behind each stage
+  \begin{scope}[on background layer]
+    \node[draw=black!25, fill=black!1, rounded corners=3pt, line width=0.4pt,
+          fit=(h1) (s1), inner sep=2.5pt] {};
+    \node[draw=black!25, fill=black!1, rounded corners=3pt, line width=0.4pt,
+          fit=(h2) (s2), inner sep=2.5pt] {};
+    \node[draw=black!25, fill=black!1, rounded corners=3pt, line width=0.4pt,
+          fit=(h3) (s3), inner sep=2.5pt] {};
+  \end{scope}
+
 \end{tikzpicture}
