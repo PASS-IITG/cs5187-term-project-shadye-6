@@ -5,29 +5,32 @@
 Coverage-guided fuzzing evaluates software by feeding mutated inputs into a target function while monitoring program execution.
 Compilers such as Clang instrument basic blocks with feedback counters.
 The fuzzing engine, such as libFuzzer~\cite{serebryany2016libfuzzer}, retains inputs that trigger new execution paths or edge transitions.
-AddressSanitizer (ASan)~\cite{serebryany2012asan} and UndefinedBehaviorSanitizer (UBSan) detect memory safety violations, out-of-bounds array reads, and integer overflows at the exact point of failure.
+AddressSanitizer (ASan)~\cite{serebryany2012asan} and UndefinedBehaviorSanitizer (UBSan) detect memory safety violations, out-of-bounds array reads, and integer overflows at the point of failure.
 
 \paragraph{Multi-Armed Bandit Scheduling.}
-An adaptive mutator must decide which mutation operator to apply to a given input.
-This decision maps directly to the classical \emph{multi-armed bandit problem}~\cite{auer2002ucb}.
-Given $K$ mutation operators (arms), the scheduler balances exploitation (allocating pulls to operators that historically yielded new coverage edges) with exploration (trying less frequent operators).
-The UCB1 algorithm computes an upper confidence bound score for each arm $i$:
+An adaptive mutator must decide which operator to apply to a given input.
+This decision maps directly to the \emph{multi-armed bandit problem}~\cite{auer2002ucb}.
+Given $K$ mutation operators (arms), the scheduler balances exploitation (allocating pulls to operators that yielded new edges) with exploration (trying less frequent operators).
+In coverage fuzzing, rewards decay over time as the input corpus saturates, creating a non-stationary reward distribution.
+We adopt Discounted-UCB~\cite{garivier2011nonstationary}, which discounts past observations with parameter $\gamma \in (0, 1)$.
+For arm $i$ at time step $t$, the discounted pull count is $\Pulls{i}(\gamma) = \sum_{s=1}^t \gamma^{t-s} \mathbb{I}\{A_s = i\}$.
+The discounted mean reward is $\Reward{i}(\gamma) = \frac{1}{\Pulls{i}(\gamma)} \sum_{s=1}^t \gamma^{t-s} R_s \mathbb{I}\{A_s = i\}$, where $R_s \in [0, 1]$ indicates whether step $s$ uncovered a new branch edge.
+The arm score is:
 \begin{equation}
 \label{eq:ucb1}
-\ArmScore{i} = \Reward{i} + C \cdot \sqrt{\frac{2 \ln \TotalPulls}{\Pulls{i}}}
+\ArmScore{i} = \Reward{i}(\gamma) + 2 C \cdot \sqrt{\frac{\ln \TotalPulls(\gamma)}{\Pulls{i}(\gamma)}}
 \end{equation}
-where $\Reward{i}$ represents the mean reward of arm $i$, $\Pulls{i}$ is the pull count of arm $i$, $\TotalPulls = \sum_{j} \Pulls{j}$ is the total number of pulls, and $C$ is an exploration parameter.
-In coverage-guided fuzzing, the reward corresponds to discovering previously unseen branch edges.
+where $\TotalPulls(\gamma) = \sum_{j=1}^K \Pulls{j}(\gamma)$ and $C > 0$ governs exploration.
 
 \paragraph{Structured 3D Asset Formats.}
 The glTF 2.0 standard~\cite{khronos_gltf2} stores 3D scenes as structured JSON metadata paired with binary buffers.
 The binary GLB container consists of a 12-byte header followed by chunk entries.
 Parsers such as \fastgltf decode JSON elements (nodes, meshes, accessors) and map byte offsets into binary vertex buffers.
-Fuzzing such formats requires maintaining structural coherence; purely random byte flips frequently fail at early syntax verification stages.
+Fuzzing such formats requires maintaining structural coherence; purely random byte flips fail at early syntax verification stages.
 
 \paragraph{Multimedia Engines.}
 Game engines such as \raylib integrate graphics, audio streams, and event serialization in C.
-Fuzzing these components requires simulating display contexts and audio buffers in memory without physical hardware.
+Testing these components requires simulating display contexts and audio buffers in memory without physical hardware.
 
 \paragraph{Asynchronous Web Architectures.}
 Modern C++ web servers such as \drogon handle high-concurrency HTTP traffic through asynchronous I/O.

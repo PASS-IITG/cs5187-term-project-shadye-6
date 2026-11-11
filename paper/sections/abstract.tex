@@ -1,7 +1,7 @@
-C and C++ software stacks handling complex inputs remain vulnerable to memory safety violations and unexpected aborts.
-In the \drogon asynchronous web framework, an uncaught filesystem error inside a method marked \texttt{noexcept} triggered immediate process termination, taking down the entire web server upon receiving an upload with an oversized filename.
-We present \tool, an adaptive fuzzing framework that combines structure-aware mutation, an independent multi-armed bandit scheduler, and domain-specialized headless in-memory shims.
-We started with a structured asset fuzzer architecture for \fastgltf, then extended it to interactive multimedia and audio drivers in \raylib, and finally to asynchronous network protocols and filesystem operations in \drogon.
-Across 59 target binaries in the three systems, \tool executed 807{,}520{,}128 test inputs.
-The tool discovered 16 security vulnerabilities across the three codebases, including six upstream-resolved defects that led to merged pull requests and maintainer fixes.
-Our results show that decoupling coverage accounting from compiler runtimes and isolating stateful subsystems into headless in-memory targets allows a single fuzzer architecture to operate effectively across diverse software domains.
+Software systems spanning file parsers, multimedia engines, and asynchronous network servers present diverse input domain barriers for coverage-guided fuzzers.
+In the \drogon web framework, an uncaught filesystem exception inside a method marked \texttt{noexcept} triggered process aborts on oversized upload filenames.
+We present \tool (Quick Transfer Fuzzer), an adaptive fuzzing architecture combining structure-aware mutation, an independent multi-armed bandit scheduler (Discounted-UCB), and headless in-memory execution shims.
+We designed a base structural mutator for \fastgltf, then extended the architecture to multimedia rendering in \raylib via software rasterizer shims, and to asynchronous network protocols in \drogon via in-memory socket mocks.
+Across 59 target binaries, \tool executed 807{,}520{,}128 inputs, reaching up to 53{,}732 executions per second on network parsers without operating system socket bottlenecks.
+\tool uncovered 16 security defects, with six upstream-confirmed vulnerabilities resulting in two merged pull requests and four maintainer-committed patches.
+Our results show that domain-specialized in-memory shims and non-stationary bandit adaptation enable effective fuzzing across heterogeneous software domains.

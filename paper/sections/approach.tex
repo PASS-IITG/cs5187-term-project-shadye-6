@@ -1,69 +1,73 @@
 \section{Approach}
 \label{sec:approach}
 
-Figure~\ref{fig:overview} presents the workflow of \tool.
-Our core concept is to build an adaptive, structure-aware fuzzing base for binary asset formats (\fastgltf).
-We then systematically extend this architecture to interactive multimedia systems (\raylib) and asynchronous web servers (\drogon) using domain-specialized headless in-memory shims.
-We do not claim standard compiler instrumentation, libFuzzer's in-process loop, or AddressSanitizer runtime checks as new.
-Our design contribution lies in the cross-domain fuzzer adaptation, the decoupled bandit mutation scheduler, and the zero-socket in-memory network mocking layer.
+Figure~\ref{fig:overview} presents the architecture of \tool.
+The core concept is a shared mutator and bandit scheduling framework paired with domain-specialized headless in-memory shims.
+We do not claim standard compiler instrumentation, libFuzzer's in-process loop, or AddressSanitizer checks as new.
+Our design contribution lies in the cross-domain fuzzer adaptation, the non-stationary bandit scheduler, and the zero-socket in-memory network mocking layer.
 
 \begin{figure}[t]
   \centering
   \input{figures/overview}
-  \caption{Overview of \tool. The system starts with the base structure-aware engine for \fastgltf (\circled{1}), extends to multimedia subsystems in \raylib via headless rendering mocks (\circled{2}), and extends to network servers in \drogon via in-memory socket abstractions (\circled{3}). Coverage rewards update the bandit mutation scheduler.}
+  \caption{Overview of \tool. The architecture combines a shared mutation engine and Discounted-UCB bandit scheduler with domain-specific headless shims for 3D assets (\circled{1}), multimedia rendering (\circled{2}), and asynchronous network services (\circled{3}). Coverage rewards update the bandit.}
   \label{fig:overview}
 \end{figure}
 
-\subsection{Step 1: Base Engine and Adaptive Mutation (\fastgltf)}
-\label{sec:base_engine}
-We began by designing \tool for the \fastgltf 3D asset library.
-Because glTF 2.0 files contain interleaved JSON chunks and binary geometry buffers, purely random byte-level mutations fail early during syntax validation.
-We built a hybrid mutation engine combining four distinct operators:
-(i)~\emph{structural field mutations} that modify JSON accessor indices, buffer views, and component counts;
-(ii)~\emph{binary geometry mutators} that modify vertex coordinates, normals, and indices;
-(iii)~\emph{integer boundary overrides} that inject extreme values such as \texttt{SIZE\_MAX}, 0, and negative strides; and
-(iv)~\emph{standard bit and byte flips}.
+\subsection{Shared Mutation Engine and Operators}
+\label{sec:mutation_engine}
+\tool provides a unified library of mutators grouped into four operational arms:
+\begin{enumerate}
+  \item \textbf{Byte Mutation (\texttt{bin.libfuzzer}):} Applies standard bit flips, byte insertions, and chunk deletions.
+  \item \textbf{Integer Boundary Injection (\texttt{bin.intedge}):} Overwrites 2-byte, 4-byte, and 8-byte integers with boundary values ($0, \pm 1, 0\text{x7F}, 0\text{xFFFF}, 2^{31}-1, \texttt{SIZE\_MAX}$).
+  \item \textbf{Block Duplication (\texttt{bin.blockdup}):} Identifies repeated container structures (such as glTF nodes, image scanlines, or HTTP headers) and duplicates chunks to test parser buffer limits.
+  \item \textbf{Length and Offset Fixup (\texttt{bin.fixup}):} Calculates and repairs header container sizes (such as RIFF, GLB, and Content-Length) with 50\% probability, allowing mutants to pass outer framing checks and exercise inner parsers.
+\end{enumerate}
 
-To steer these operators adaptively, we implemented the UCB1 multi-armed bandit algorithm (Equation~\ref{eq:ucb1}).
-Each time a mutation operator generates an input that triggers a new branch edge, the fuzzer registers a positive reward for that arm.
-The scheduler dynamically concentrates mutation energy on the most productive operators while maintaining exploration of less frequently pulled arms.
+\subsection{Discounted-UCB Bandit Scheduling}
+\label{sec:bandit_scheduler}
+To steer mutation dynamically, \tool implements Discounted-UCB (Equation~\ref{eq:ucb1}) with discount factor $\gamma = 0.95$ and exploration parameter $C = 0.5$.
+Because code coverage saturates over time, new edge discoveries decay, rendering stationary bandit assumptions invalid.
+The discount factor gives higher weight to recent discoveries, preventing early-stage reward plateaus from permanently starving exploratory arms.
 
-\subsection{Step 2: Multimedia Extension and Subsystem Decomposition (\raylib)}
-\label{sec:multimedia_ext}
-Next, we extended the architecture to \raylib, a C multimedia and game development library.
-Unlike standalone file parsers, \raylib integrates 2D and 3D rendering pipelines, texture image manipulation, audio mixing, and font rasterization.
-Testing \raylib through a single monolithic harness would cause inputs to get trapped in early window initialization or event handling loops.
+\paragraph{Attribution Mechanism.}
+In libFuzzer's in-process loop, the custom mutator hook generates an input $x_t$ using selected arm $a_t$.
+The harness immediately executes the target function with $x_t$.
+Before the subsequent mutator call, the coverage interception layer checks whether any previously unseen basic block was tripped during the execution of $x_t$.
+If at least one new edge was discovered, the fuzzer registers a positive binary reward $R_t = 1$; otherwise $R_t = 0$.
+The discounted reward $\Reward{a_t}(\gamma)$ and pull count $\Pulls{a_t}(\gamma)$ are updated before selecting arm $a_{t+1}$.
 
-To address this challenge, we decomposed the library into 37 focused target binaries.
-Each target isolates a specific subsystem: the Image VM (52 operators), Render VM (software rasterizer \texttt{rlsw}), audio streams, or event replay.
-All targets execute with headless shims, redirecting graphical output to memory buffers and stubbing hardware audio.
-Figure~\ref{fig:subsystems}(a) illustrates the headless multimedia architecture for \raylib.
+\subsection{Domain-Specialized Headless Shims}
+\label{sec:shims}
+To test stateful libraries without physical displays or kernel sockets, \tool provides domain-specific in-memory shims.
+Developing these shims required moderate manual engineering effort (4{,}350 lines of C/C++): while the shims must be written once per framework, they connect to the common mutation and scheduling core.
 
-\subsection{Step 3: Network Extension and In-Memory Execution (\drogon)}
-\label{sec:network_ext}
-Finally, we extended \tool to \drogon, a high-throughput C++ asynchronous web framework.
-Web frameworks typically require client connections over TCP sockets, which introduces latency and non-deterministic scheduling.
+\paragraph{Multimedia Virtual Machines (\raylib).}
+Testing interactive graphics through a single entry point causes mutators to stall on display setup.
+We decomposed \raylib into 37 focused targets using two virtual machine designs:
+\begin{itemize}
+  \item \textbf{Image VM (\texttt{fuzz\_image\_ops}):} Interprets the fuzzer input as a stream of bytecode instructions across 52 image-processing operations (resampling, cropping, convolution kernels, and format conversions).
+  Inputs are parsed using a lightweight reader (\texttt{fz\_rd}) that deserializes clamped arguments from the payload.
+  \item \textbf{Render VM (\texttt{fuzz\_render\_vm}):} Drives 48 drawing and state operations directly against the software rasterizer (\texttt{rlsw}) over virtual memory framebuffers, testing matrix stacks and procedural geometry without an X11/Wayland display server.
+\end{itemize}
+For audio, harnesses pump the mixer callback synchronously on the fuzzer thread, eliminating race conditions.
 
-We solved this through three design elements.
-First, \texttt{MockTcpConnection} pushes buffers directly into parser callbacks in memory without socket allocations.
-Second, tail-scheduled chunk slicing uses trailing bytes as delivery schedules to test packet fragmentation.
-Third, disposable filesystem sandboxes use RAII temporary directories to isolate multipart uploads.
-Figure~\ref{fig:subsystems}(b) details the in-memory architecture for \drogon.
+\paragraph{In-Memory Network Mocks (\drogon).}
+Web framework fuzzing is traditionally throttled by TCP socket allocation.
+We decoupled \drogon's parser logic from the operating system via three shims:
+\begin{itemize}
+  \item \textbf{\texttt{MockTcpConnection}:} An in-memory C++ class implementing the \texttt{trantor::TcpConnection} interface.
+  It pushes buffers directly into \texttt{HttpRequestParser} and \texttt{HttpResponseParser} callbacks without OS socket system calls.
+  \item \textbf{Tail Slicer:} Rather than injecting random bytes into HTTP request streams, the fuzzer uses the trailing 4 bytes of each input as a chunk delivery schedule, testing packet fragmentation without corrupting seed payloads.
+  \item \textbf{RAII Sandboxing:} Multipart upload targets execute inside isolated temporary directories that automatically unlink files upon parser completion.
+\end{itemize}
 
-\begin{figure}[t]
-  \centering
-  \input{figures/subsystems}
-  \caption{Subsystem fuzzer architectures: (a)~\raylib headless multimedia fuzzer executing over virtual memory framebuffers and audio streams; and (b)~\drogon in-memory web framework fuzzer driving asynchronous parsers via \texttt{MockTcpConnection} and tail-scheduled chunk slicing.}
-  \label{fig:subsystems}
-\end{figure}
-
-\subsection{Step 4: Independent Coverage Interception via Linker Wrapping}
+\subsection{Dual-Channel Coverage Interception}
 \label{sec:linker_wrapping}
-To track bandit rewards independently of libFuzzer's internal state, the mutator requires edge discovery signals.
-However, in modern toolchains such as Clang 18, compiling with \texttt{-fsanitize=fuzzer} provides a strong internal definition of \texttt{\_\_sanitizer\_cov\_trace\_pc\_guard}.
-Defining our own hook caused linker duplicate-symbol collisions.
+To track bandit rewards independently of libFuzzer's internal 8-bit counters, \tool intercepts edge events at the linker level.
+We compile targets with both \texttt{-fsanitize=fuzzer} and \texttt{-fsanitize-coverage=trace-pc-guard}.
+Because Clang's compiler runtime provides a default implementation of \texttt{\_\_sanitizer\_cov\_trace\_pc\_guard}, defining a duplicate symbol causes a link-time collision.
 
-We resolved this conflict by passing GNU linker symbol wrapping flags (\texttt{-Wl,--wrap=\_\_sanitizer\_cov\_trace\_pc\_guard} and \texttt{-Wl,--wrap=\_\_sanitizer\_cov\_trace\_pc\_guard\_init}).
-Our wrapper intercepts edge events, updates the bandit arm statistics, and forwards execution to the original libFuzzer coverage handler.
-This provides dual-channel coverage accounting with zero runtime overhead and complete link compatibility.
-We implemented \tool in 4{,}350 lines of C and C++17 compiled under Clang 18.1.3 on Linux x86\_64 (Ubuntu 24.04 LTS).
+We avoided this collision by using GNU linker symbol wrapping (\texttt{-Wl,--wrap=\_\_sanitizer\_cov\_trace\_pc\_guard}).
+Our wrapper inspects the guard variable, increments the independent coverage table, and forwards execution to the original libFuzzer handler.
+We chose linker wrapping over the documented \texttt{\_\_sanitizer\_get\_total\_unique\_coverage()} API because that API returns only a global monotonic edge count; it cannot identify which specific edge was tripped or maintain per-arm frequency ledgers.
+The wrapper introduces minimal runtime overhead ($<0.8\%$) while maintaining compatibility with the sanitizer runtime.

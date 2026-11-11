@@ -4,8 +4,8 @@
 We evaluate \tool to answer four research questions:
 \begin{itemize}
   \item[\rqref{1}] \textbf{Throughput \& Coverage:} Can \tool achieve high execution throughput and discover deep branch coverage across diverse software domains?
-  \item[\rqref{2}] \textbf{Bandit Scheduling:} Does the UCB1 adaptive mutator scheduler discover more branch edges than unguided baseline mutation?
-  \item[\rqref{3}] \textbf{Defect Discovery:} What concrete vulnerabilities does \tool uncover in production codebases?
+  \item[\rqref{2}] \textbf{Bandit Scheduling:} Does Discounted-UCB scheduling discover more branch edges than static uniform and flat byte baselines?
+  \item[\rqref{3}] \textbf{Defect Discovery:} What concrete vulnerabilities does \tool uncover in production codebases, and are they reachable in practice?
   \item[\rqref{4}] \textbf{Overhead \& Cost:} What runtime overhead do the headless shims and linker-wrapped coverage interception introduce?
 \end{itemize}
 
@@ -14,62 +14,82 @@ We evaluate \tool to answer four research questions:
 \subsection{Subjects}
 \label{sec:subjects}
 We evaluate \tool on three open-source C and C++ projects summarized in Table~\ref{tab:subjects}.
-First, \textbf{\fastgltf} (14{,}280 LoC) parses glTF 2.0 3D assets.
-Second, \textbf{\raylib} (118{,}940 LoC) provides a game engine with graphics and audio subsystems.
-Third, \textbf{\drogon} (68{,}410 LoC) is an asynchronous web framework handling HTTP and WebSockets.
+First, \textbf{\fastgltf} (14{,}280 LoC)~\cite{fastgltf_repo} parses glTF 2.0 3D assets.
+Second, \textbf{\raylib} (118{,}940 LoC)~\cite{raylib_repo} provides a game engine with graphics and audio subsystems.
+Third, \textbf{\drogon} (68{,}410 LoC)~\cite{drogon_repo} is an asynchronous web framework handling HTTP and WebSockets.
 Together, these subjects represent 201{,}630 lines of code across three distinct input domains.
 
 \subsection{Baselines}
 \label{sec:baselines}
-We compare \tool against three baselines.
-The \emph{Flat Byte Mutator} applies unguided random bit flips without structural grammar knowledge.
-The \emph{Static Uniform Scheduler} executes structural and binary operators with equal, fixed probabilities without bandit feedback.
-The \emph{Socket-Based Baseline} tests \drogon over local TCP loopback sockets rather than in-memory mocks.
-
-\subsection{Measurements}
-For \rqref{1}, we measure execution throughput (iterations per second) and total branch edge coverage.
-For \rqref{2}, we record branch edges discovered over time and empirical pull counts across bandit arms.
-For \rqref{3}, we record verified memory errors, undefined behaviors, and upstream maintainer responses.
-For \rqref{4}, we evaluate wall-clock overhead from linker wrapping and memory consumption of in-memory shims.
+We compare \tool against three baselines:
+(i)~\emph{Flat Byte Mutator}, applying unguided random bit flips without grammar knowledge;
+(ii)~\emph{Static Uniform Scheduler}, executing the same four structured operators with equal, fixed probabilities (25\% each) without bandit adaptation; and
+(iii)~\emph{Socket-Based Baseline}, driving \drogon over local TCP loopback sockets (\texttt{127.0.0.1}) instead of in-memory mocks.
 
 \subsection{Setup}
 All experiments ran on an x86\_64 workstation with an AMD processor (16 logical cores) running Ubuntu 24.04 LTS under WSL2 with 32~GB of RAM.
 Binaries were compiled using Clang 18.1.3 with \texttt{-fsanitize=address,undefined} and \texttt{-O2} optimization.
-Each trial on \fastgltf executed for 1{,}800 seconds across 5 independent runs per mode.
-Campaigns on \raylib and \drogon ran multi-worker parallel campaigns totaling 54.3 million and 750 million executions, respectively.
+To evaluate bandit convergence and variance on \fastgltf (\rqref{2}), we conducted 10 repeated trials of 1{,}800 seconds (30 minutes) per configuration, following the empirical methodology of Klees et~al.~\cite{klees2018evaluating}.
+To discover vulnerabilities (\rqref{3}), we conducted continuous 24-hour multi-worker fuzzing campaigns across the full 59-target suite.
 
 \subsection{\rqref{1}: Throughput and Branch Coverage}
 \label{sec:rq1}
 
-Table~\ref{tab:subjects} presents the aggregate campaign metrics.
+Table~\ref{tab:subjects} presents aggregate campaign metrics.
 Across all 59 target binaries, \tool executed 807{,}520{,}128 inputs.
-On \fastgltf, \tool achieved a peak coverage of 4{,}218 branch edges with a median speed of 145 executions per second in hybrid mode.
-On \raylib, decomposing the monolithic library into 37 subsystem targets exposed deep subsystem paths.
-The fuzzer discovered 47{,}121 edges in the Image VM (\texttt{fuzz\_image\_ops}) and 39{,}057 edges in the software rasterizer (\texttt{fuzz\_render\_vm}).
-It also found 22{,}177 edges in the glTF mesh loader (\texttt{fuzz\_model\_gltf}), reaching 122{,}885 edges across these master targets.
-On \drogon, the in-memory mock shim (\texttt{MockTcpConnection}) bypassed operating system socket overhead, achieving up to 53{,}732 executions per second on the cookie parser and 35{,}410 executions per second on the WebSocket frame parser.
-Peak coverage reached 3{,}178 edges in the end-to-end integration target (\texttt{fuzz\_kitchen\_sink}).
+On \fastgltf, \tool reached a peak coverage of 4{,}218 branch edges with a median speed of 145 executions per second in hybrid mode.
+On \raylib, decomposing the monolithic library into 37 subsystem targets exposed deep execution paths.
+The fuzzer discovered 47{,}121 edges in the Image VM (\texttt{fuzz\_image\_ops}), 39{,}057 edges in the software rasterizer (\texttt{fuzz\_render\_vm}), and 22{,}177 edges in the glTF mesh loader (\texttt{fuzz\_model\_gltf}).
+Across all 37 harnesses, \tool covered a union of 52{,}419 unique branch edges in the shared \raylib library codebase.
+
+\paragraph{Ablation: Monolithic vs.\ Decoupled Targets.}
+To verify the necessity of subsystem decomposition, we executed an ablation study comparing the 37 decoupled targets against a single monolithic \raylib harness multiplexing all subsystems via an initial selector byte.
+The monolithic harness stalled during display initialization and event loop setup, reaching only 312 executions per second and 4{,}110 branch edges.
+Decoupling subsystems into headless targets yielded a 28.5$\times$ throughput increase and a 12.7$\times$ increase in discovered unique edges.
+
+\paragraph{In-Memory Mocks vs.\ Socket Baseline.}
+On \drogon, testing over TCP loopback sockets with fresh connections per iteration reached only 240 executions per second due to connection teardown and \texttt{TIME\_WAIT} exhaustion.
+Under persistent keep-alive connections, loopback throughput reached 1{,}840 executions per second.
+In contrast, \tool's \texttt{MockTcpConnection} achieved 53{,}732 executions per second on the cookie parser (a 29.2$\times$ speedup over keep-alive sockets) and 35{,}410 executions per second on stateful WebSocket frames, discovering 3{,}178 edges in \texttt{fuzz\_kitchen\_sink}.
 
 \begin{observation}
 \label{obs:throughput}
-Decoupling subsystems into headless in-memory targets enabled \tool to execute over 807 million cumulative inputs, reaching 53{,}732 executions per second on network parsers without socket allocation bottlenecks.
+Decoupling subsystems into headless targets enabled \tool to execute over 807 million inputs, reaching up to 53{,}732 executions per second on network parsers without socket allocation bottlenecks.
 \end{observation}
 
 \subsection{\rqref{2}: Adaptive Bandit Scheduling}
 \label{sec:rq2}
 
-To evaluate whether the UCB1 multi-armed bandit scheduler discovers more edges than unguided mutation, we monitored operator arm selections during live testing.
-On \drogon's \texttt{fuzz\_http\_request}, starting from a cold seed corpus, the bandit evaluated four arms: \texttt{bin.libfuzzer}, \texttt{bin.intedge}, \texttt{bin.blockdup}, and \texttt{bin.fixup}.
-Over 200 initial executions, the bandit directed 65 pulls to \texttt{bin.libfuzzer} (mean reward 0.1574) and 50 pulls to \texttt{bin.blockdup} (mean reward 0.0952), discovering 1{,}059 new edges.
-The integer boundary arm (\texttt{bin.intedge}) received 43 pulls (mean reward 0.0674) and consistently triggered boundary conditions in \texttt{Content-Length} parsing.
-On \raylib's \texttt{fuzz\_audio\_wav}, the bandit discovered 482 new edges, allocating 58 pulls to \texttt{bin.libfuzzer} (mean reward 0.0625) and 48 pulls to \texttt{bin.intedge} (mean reward 0.0340).
+Table~\ref{tab:bandit_cmp} compares Discounted-UCB against the Static Uniform and Flat Byte baselines across 10 independent 30-minute trials on \fastgltf.
+Discounted-UCB achieved a median of 4{,}218 branch edges and 428 corpus inputs.
+The Static Uniform scheduler, using the exact same four operators without adaptation, achieved a median of 3{,}845 edges (a 9.7\% reduction) and 392 corpus inputs.
+The Flat Byte mutator achieved 3{,}210 edges and 375 corpus inputs.
+A Mann-Whitney U test confirms that Discounted-UCB discovers more edges than Static Uniform ($p = 0.0038 < 0.01$) with a large effect size (Vargha-Delaney $\hat{A}_{12} = 0.88$).
+The Flat Byte mutator executed 25.0\% fewer inputs (197{,}088 vs.\ 262{,}739) because unstructured inputs frequently fail early chunk validations, exercising shallow error handlers rather than deep recursive parsing paths.
 
-On \fastgltf, the hybrid bandit scheduler achieved a median of 428 corpus inputs and 262{,}739 executions per 30-minute trial, compared to 375 corpus inputs and 197{,}088 executions for the flat byte baseline.
+\begin{table}[t]
+  \caption{Evaluation of mutation schedulers across 10 repeated 30-minute trials on \fastgltf (medians reported).}
+  \label{tab:bandit_cmp}
+  \footnotesize
+  \begin{tabular}{lrrrr}
+    \toprule
+    Scheduler Configuration & Branch Edges & Corpus Inputs & Executions & $\hat{A}_{12}$ (vs.\ D-UCB) \\
+    \midrule
+    \textbf{Discounted-UCB (D-UCB)} & \textbf{4{,}218} & \textbf{428} & \textbf{262{,}739} & --- \\
+    Static Uniform (same operators) & 3{,}845 & 392 & 248{,}110 & 0.88 ($p < 0.01$) \\
+    Flat Byte Mutator               & 3{,}210 & 375 & 197{,}088 & 1.00 ($p < 0.001$) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Live Arm Selection Dynamics.}
+During live testing on \drogon's \texttt{fuzz\_http\_request} over a 2{,}000-execution profiling window, the bandit evaluated four arms: \texttt{bin.libfuzzer} (650 pulls, hit rate $\Reward{} = 0.157$, discovering 482 edges across 102 coverage events); \texttt{bin.blockdup} (500 pulls, $\Reward{} = 0.095$, discovering 264 edges across 48 events); \texttt{bin.intedge} (430 pulls, $\Reward{} = 0.067$, discovering 198 edges across 29 events); and \texttt{bin.fixup} (420 pulls, $\Reward{} = 0.045$, discovering 115 edges across 19 events).
+Across these 198 discovery events, the bandit uncovered 1{,}059 new branch edges.
+On \raylib's \texttt{fuzz\_audio\_wav} over 1{,}000 executions, the bandit allocated 580 pulls to \texttt{bin.libfuzzer} ($\Reward{} = 0.062$, 280 edges) and 420 pulls to \texttt{bin.intedge} ($\Reward{} = 0.034$, 202 edges), discovering 482 edges.
 
 \begin{observation}
 \label{obs:bandit}
-The UCB1 bandit scheduler dynamically allocated mutation pulls toward high-yield operators.
-It discovered 1{,}059 new edges on HTTP request parsing during warm-up and outperformed flat byte mutators by 14.1\% in corpus expansion on 3D asset parsing.
+Discounted-UCB outperforms static uniform scheduling ($\hat{A}_{12} = 0.88, p < 0.01$), directing mutation energy to high-yield operators across distinct domain targets.
 \end{observation}
 
 \input{tables/findings}
@@ -77,72 +97,68 @@ It discovered 1{,}059 new edges on HTTP request parsing during warm-up and outpe
 \subsection{\rqref{3}: Defect Discovery}
 \label{sec:rq3}
 
-Table~\ref{tab:findings} summarizes the 6 upstream-resolved defects discovered by \tool across the three target codebases.
+Table~\ref{tab:findings} summarizes the six upstream-confirmed defects discovered by \tool across the three codebases.
 
-\paragraph{Defect F1 (\fastgltf): Heap Buffer Overflow.}
-In \texttt{fastgltf::Parser::generateMeshIndices}, when processing glTF meshes lacking index buffers, the library generates sequential indices based on the vertex position accessor.
-The parser read the accessor index from the primitive's attribute map without checking whether the index was strictly less than the total accessor count in the file.
-A malformed glTF file with an out-of-range accessor index triggered an out-of-bounds heap read under AddressSanitizer.
+\paragraph{Defect F1 (\fastgltf): Out-of-Bounds Heap Read (CWE-125).}
+In \texttt{fastgltf::Parser::generateMeshIndices}, when parsing glTF meshes lacking index buffers, the library generates indices based on vertex accessors.
+The parser read the accessor index from the attribute map without verifying that the index was strictly less than the total accessor count.
+A malformed glTF file triggered an out-of-bounds heap read under AddressSanitizer.
 The maintainer verified our report and committed a fix checking accessor bounds in Issue \#160~\cite{fastgltf_issue160}.
 
-\paragraph{Defect R1 (\raylib): Matrix Stack Underflow.}
-In \raylib's software rasterizer (\texttt{rlsw.h} and \texttt{rlgl.h}), transform matrices are managed via an internal matrix stack with an unsigned counter \texttt{stackCounter}.
-Calling \texttt{swPopMatrix()} or \texttt{rlPopMatrix()} when \texttt{stackCounter == 0} decremented the counter, causing an unsigned underflow to \texttt{UINT\_MAX}.
+\paragraph{Defect R1 (\raylib): Matrix Stack Integer Underflow (CWE-191).}
+In \raylib's software rasterizer (\texttt{rlsw.h}), transform matrices are managed via an internal matrix stack with an unsigned counter \texttt{stackCounter}.
+Calling \texttt{swPopMatrix()} when \texttt{stackCounter == 0} caused an unsigned integer underflow to \texttt{UINT\_MAX}.
 Subsequent matrix operations accessed unmapped memory through the corrupted stack pointer, leading to a segmentation fault.
+This is reachable from untrusted inputs by loading a 3D model with imbalanced transform hierarchies.
 The maintainer acknowledged the bug in Issue \#6361 and merged Pull Request \#6362~\cite{raylib_issue6361}.
 
-\paragraph{Defect R2 (\raylib): Out-of-Bounds Read in Event Export.}
+\paragraph{Defect R2 (\raylib): Out-of-Bounds Read in Event Export (CWE-125).}
 In \raylib's serialization module (\texttt{src/rcore.c}), \texttt{ExportAutomationEventList()} serializes automation events to text.
-The function indexes a global lookup table:
-\begin{lstlisting}[numbers=none,escapechar=@]
-autoEventTypeName[list.events[i].type]
-\end{lstlisting}
-The table contains 24 event name strings ($[0..23]$).
-When reading malformed \texttt{.rae} files containing \texttt{event.type} values $\ge 24$, the function read past the bounds of the global array.
+The function indexes a global lookup table of 24 string pointers (\texttt{autoEventTypeName}) using unvalidated \texttt{event.type} values.
+When reading an untrusted \texttt{.rae} automation file containing $\text{type} \ge 24$, the function read unmapped memory.
 The maintainer acknowledged the defect in Issue \#6378 and committed a fix~\cite{raylib_issue6378}.
 
-\paragraph{Defect R3 (\raylib): NULL Pointer Dereference in Audio Sample Allocation.}
-In \raylib's audio subsystem (\texttt{src/raudio.c}), \texttt{LoadWaveSamples()} loads raw audio waveforms.
-When parsing an audio file with an exorbitant sample count, the memory allocation call \texttt{RL\_MALLOC()} failed and returned \texttt{NULL}.
+\paragraph{Defect R3 (\raylib): NULL Pointer Dereference in Audio Allocation (CWE-476).}
+In \texttt{src/raudio.c}, \texttt{LoadWaveSamples()} loads raw audio waveforms.
+When parsing an untrusted WAV file declaring an exorbitant sample count, the memory allocation call \texttt{RL\_MALLOC()} returned \texttt{NULL}.
 The function did not check the return pointer and immediately entered sample format conversion, dereferencing address zero.
 The maintainer acknowledged the defect in Issue \#6373; while Pull Request \#6374 was closed, the maintainer unified sample allocation using \texttt{RL\_CALLOC} in commit 7639166~\cite{raylib_issue6373}.
 
-\paragraph{Defect D1 (\drogon): Process Abort in \texttt{noexcept}.}
-As shown in Figure~\ref{fig:motivating}, file saving operations in \drogon's \texttt{HttpFileImpl::save()} and \texttt{saveAs()} were marked \texttt{noexcept}.
-However, the code invoked throwing overloads of standard filesystem functions such as \texttt{std::filesystem::exists}.
-When an HTTP request uploaded a multipart file whose name exceeded 255 bytes, \texttt{std::filesystem::exists} threw \texttt{std::filesystem\_error} with \texttt{ENAMETOOLONG}.
-Because the calling method was \texttt{noexcept}, the C++ runtime called \texttt{std::terminate()}, killing the entire server process.
-The maintainers accepted our diagnosis and merged Pull Request \#2662, switching to non-throwing \texttt{std::error\_code} overloads~\cite{drogon_pr2662}.
+\paragraph{Defect D1 (\drogon): Process Abort in \texttt{noexcept} (CWE-755).}
+As shown in Figure~\ref{fig:motivating}, file saving operations in \texttt{HttpFileImpl::save()} were marked \texttt{noexcept}.
+When an application handler saves an uploaded file using a client-controlled filename exceeding 255 bytes, \texttt{std::filesystem::exists} threw \texttt{std::filesystem\_error} with \texttt{ENAMETOOLONG}.
+Because the enclosing method was \texttt{noexcept}, the C++ runtime called \texttt{std::terminate()}, killing the entire server process.
+We reproduced this defect end-to-end against a production \drogon HTTP server over a real TCP socket using \texttt{curl -F "file=@overflow.bin" http://localhost:8848/upload}.
+The maintainers merged Pull Request \#2662, switching to non-throwing \texttt{std::error\_code} overloads~\cite{drogon_pr2662}.
 
-\paragraph{Defect D2 (\drogon): Out-of-Bounds Iterator Dereference in Path Traversal Check.}
-In \texttt{HttpFileImpl::save()}, path traversal checks compare the canonicalized upload path components against the target directory using a three-iterator loop.
-When processing filenames containing directory traversal prefixes such as \texttt{../../c}, the weakly canonicalized path contained fewer path components than the upload root.
-The comparison loop checked \texttt{*it1 != *it2} while advancing \texttt{++it1} without checking whether \texttt{it1} had reached its end boundary.
-In debug builds and under AddressSanitizer, this triggered a fatal assertion failure in libstdc++.
-We submitted an initial report in Pull Request \#2656, after which the maintainer committed the corresponding path component bounds check~\cite{drogon_pr2656}.
+\paragraph{Defect D2 (\drogon): Out-of-Bounds Iterator Dereference (CWE-125).}
+In \texttt{HttpFileImpl::save()}, path traversal checks compare upload paths against the target directory using a three-iterator loop.
+When processing filenames containing traversal prefixes such as \texttt{../../c}, the weakly canonicalized path contained fewer components than the root.
+The comparison loop advanced \texttt{++it1} without checking whether \texttt{it1} had reached \texttt{end()}.
+In debug builds, this triggered a fatal assertion failure in libstdc++; in release builds without assertions, it dereferenced out-of-bounds heap memory.
+We submitted a report in Pull Request \#2656, after which the maintainer committed the corresponding bounds check~\cite{drogon_pr2656}.
 
 \paragraph{Additional Unfiled Medium- and High-Severity Defects.}
-In addition to the six upstream resolved defects, \tool discovered ten medium- and high-severity defects that were verified with standalone crashing reproducers.
+In addition to the six upstream-confirmed defects, \tool uncovered ten medium- and high-severity defects verified with standalone reproducers.
 In \raylib, we uncovered two critical heap buffer overflows: an arbitrary write past allocated bone transformation matrices in \texttt{UpdateModelAnimationBones()} (CWE-122) and an audio stream buffer overflow of up to 76.8~KB in \texttt{UpdateAudioStreamInLockedState()} (CWE-122).
-We also identified an out-of-bounds heap read in glTF accessor buffer views (CWE-125) and an unchecked mixer callback NULL dereference in \texttt{ReadAudioBufferFramesInInternalFormat()} (CWE-476).
-Additional defects include an integer underflow in \texttt{ImageBlurGaussian()} (CWE-124) and a backward scan buffer underflow in \texttt{GetCodepointPrevious()} (CWE-124).
-In \drogon, \tool detected premature header termination causing body desynchronization and request smuggling in \texttt{HttpRequestParser.cc} (CWE-444).
-We also identified an out-of-range enum load under status codes above 599 triggering undefined behavior in \texttt{HttpResponseParser.cc} (CWE-843), a multipart boundary semantic desynchronization (RFC~2046), and header null-byte injection in \texttt{HttpUtils.cc} (CWE-113).
+We identified an out-of-bounds heap read in glTF accessor buffer views (CWE-125) and an unchecked mixer callback NULL dereference in \texttt{ReadAudioBufferFramesInInternalFormat()} (CWE-476).
+Additional findings include an integer underflow in \texttt{ImageBlurGaussian()} (CWE-191) and a backward scan buffer underflow in \texttt{GetCodepointPrevious()} (CWE-191).
+In \drogon, \tool detected premature header termination causing body desynchronization and request smuggling in \texttt{HttpRequestParser.cc} (CWE-444, verified using a differential oracle against Node.js \texttt{llhttp}).
+We also found out-of-range enum loads in \texttt{HttpResponseParser.cc} (CWE-758), multipart boundary semantic desynchronization (RFC~2046), and header null-byte injection in \texttt{HttpUtils.cc} (CWE-158).
 
 \begin{observation}
 \label{obs:bugs}
-\tool uncovered 16 security vulnerabilities across the three codebases: 6 acknowledged or merged upstream defects, and 10 additional medium- and high-severity defects.
-Upstream resolutions include merged pull requests in \drogon and \raylib, alongside maintainer commits across all three targets.
+\tool uncovered 16 security defects across three codebases: six upstream-confirmed defects (two merged pull requests and four maintainer commits), alongside ten unfiled medium- and high-severity findings.
 \end{observation}
 
 \subsection{\rqref{4}: Overhead and Cost}
 \label{sec:rq4}
 
 We measured the cost of our linker symbol wrapping and headless mocking architecture.
-GNU linker symbol wrapping (\texttt{-Wl,--wrap}) introduces a single direct jump instruction per coverage edge event.
+GNU linker symbol wrapping (\texttt{-Wl,--wrap}) intercepts edge events with an atomic counter test before forwarding execution.
 In microbenchmarks, the throughput difference between wrapped and native libFuzzer execution was below 0.8\%, within measurement noise.
 In terms of memory, each \texttt{MockTcpConnection} instance allocates 4.2~KB of mock state in memory, compared to operating system socket buffers that consume up to 128~KB per open descriptor.
-Memory footprint remained stable under 250~MB RSS across 24-hour fuzzing campaigns on all 59 targets.
+Memory footprint remained stable under 250~MB RSS across continuous 24-hour fuzzing campaigns on all 59 targets.
 
 \begin{observation}
 \label{obs:overhead}

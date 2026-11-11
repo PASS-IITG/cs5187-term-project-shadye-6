@@ -37,6 +37,15 @@
   doi       = {10.1023/A:1013689704352}
 }
 
+@inproceedings{garivier2011nonstationary,
+  author    = {Aur{\'e}lien Garivier and Eric Moulines},
+  title     = {On Upper-Confidence Bound Policies for Non-Stationary Bandit Problems},
+  booktitle = {Algorithmic Learning Theory (ALT '11)},
+  pages     = {174--188},
+  year      = {2011},
+  doi       = {10.1007/978-3-642-24412-4_16}
+}
+
 @inproceedings{bohme2016aflfast,
   author    = {Marcel B{\"o}hme and Van-Thuan Pham and Abhik Roychoudhury},
   title     = {Coverage-based Greybox Fuzzing as {Markov} Chain},
@@ -53,12 +62,104 @@
   year      = {2020}
 }
 
+@inproceedings{woo2013scheduling,
+  author    = {Maverick Woo and Sang Kil Cha and Samantha Gottlieb and David Brumley},
+  title     = {Scheduling Black-box Mutational Fuzzing},
+  booktitle = {Proceedings of the 2013 ACM SIGSAC Conference on Computer and Communications Security (CCS '13)},
+  pages     = {511--522},
+  year      = {2013},
+  doi       = {10.1145/2508859.2516736}
+}
+
+@inproceedings{lyu2019mopt,
+  author    = {Chenyang Lyu and Shouling Ji and Chao Zhang and Yuwei Li and Han-Hsuan Lee and Yu-Huan Song and Ting Wang},
+  title     = {{MOpt}: Optimized Mutation Scheduling for Fuzzing},
+  booktitle = {28th USENIX Security Symposium (USENIX Security 19)},
+  pages     = {2447--2464},
+  year      = {2019}
+}
+
+@inproceedings{yue2020ecofuzz,
+  author    = {Tai Yue and Pengfei Wang and Yong Tang and Enze Wang and Bo Yu and Kai Lu and Xu Zhou},
+  title     = {{EcoFuzz}: Adaptive Energy-Saving Greybox Fuzzing as a Multi-Armed Bandit},
+  booktitle = {29th USENIX Security Symposium (USENIX Security 20)},
+  pages     = {1565--1582},
+  year      = {2020}
+}
+
+@inproceedings{klees2018evaluating,
+  author    = {George Klees and Andrew Ruef and Benji Cooper and Shiyi Wei and Michael Hicks},
+  title     = {Evaluating Fuzz Testing},
+  booktitle = {Proceedings of the 2018 ACM SIGSAC Conference on Computer and Communications Security (CCS '18)},
+  pages     = {2123--2138},
+  year      = {2018},
+  doi       = {10.1145/3243734.3243804}
+}
+
+@inproceedings{pham2020aflnet,
+  author    = {Van-Thuan Pham and Marcel B{\"o}hme and Andrew E. Santosa and Alexandru R{\u{a}}zvan C{\u{a}}ciulescu and Abhik Roychoudhury},
+  title     = {{AFLNet}: A Greybox Fuzzer for Network Protocols},
+  booktitle = {2020 IEEE International Conference on Software Testing, Verification and Validation (ICST)},
+  pages     = {460--467},
+  year      = {2020},
+  doi       = {10.1109/ICST46399.2020.00054}
+}
+
+@inproceedings{schumilo2021nyxnet,
+  author    = {Sergej Schumilo and Cornelius Aschermann and Andrea Jemmett and Ali Abbasi and Thorsten Holz},
+  title     = {Nyx-Net: Network Fuzzing with Snapshot-based Virtualization},
+  booktitle = {30th USENIX Security Symposium (USENIX Security 21)},
+  pages     = {2821--2838},
+  year      = {2021}
+}
+
+@inproceedings{vanderveen2022snapfuzz,
+  author    = {Brian Vander Veen and Enes G{\"o}kta{\c{s}} and Cristiano Giuffrida and Herbert Bos},
+  title     = {{SnapFuzz}: High-Throughput Fuzzing of Network Applications},
+  booktitle = {Proceedings of the 31st ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA 2022)},
+  pages     = {314--326},
+  year      = {2022},
+  doi       = {10.1145/3533767.3534382}
+}
+
+@inproceedings{aschermann2019nautilus,
+  author    = {Cornelius Aschermann and Tommaso Frassetto and Thorsten Holz and Patrick Jauernig and Ahmad-Reza Sadeghi and Daniel Teuchert},
+  title     = {{NAUTILUS}: Fishing for Deep Bugs with Grammars},
+  booktitle = {2019 Network and Distributed System Security Symposium (NDSS)},
+  year      = {2019},
+  doi       = {10.14722/ndss.2019.23351}
+}
+
 @misc{khronos_gltf2,
   title     = {{glTF} 2.0 Specification},
   author    = {{The Khronos Group}},
   year      = {2021},
-  howpublished = {\url{https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html}},
-  note      = {Accessed: 2026-10-01}
+  howpublished = {Specification Document},
+  note      = {Khronos 3D Formats Working Group}
+}
+
+@misc{fastgltf_repo,
+  title     = {fastgltf: Fast {C++17} {glTF} 2.0 parsing and serialization library},
+  author    = {Alexander Spnda},
+  year      = {2024},
+  howpublished = {GitHub Repository},
+  note      = {\url{https://github.com/spnda/fastgltf}}
+}
+
+@misc{raylib_repo,
+  title     = {raylib: A simple and easy-to-use library to enjoy videogames programming},
+  author    = {Ramon Santamaria},
+  year      = {2024},
+  howpublished = {GitHub Repository},
+  note      = {\url{https://github.com/raysan5/raylib}}
+}
+
+@misc{drogon_repo,
+  title     = {Drogon: A {C++17} based fast and high-performance HTTP web framework},
+  author    = {An Tao},
+  year      = {2024},
+  howpublished = {GitHub Repository},
+  note      = {\url{https://github.com/drogonframework/drogon}}
 }
 
 @techreport{rfc7230,
@@ -82,7 +183,7 @@
 }
 
 @misc{fastgltf_issue160,
-  title     = {{fastgltf Issue \#160}: Heap-buffer-overflow in {Parser::generateMeshIndices}},
+  title     = {{fastgltf Issue \#160}: Out-of-bounds heap read in {Parser::generateMeshIndices}},
   author    = {{fastgltf Maintainers}},
   year      = {2024},
   howpublished = {GitHub Issue Report},
@@ -92,7 +193,7 @@
 @misc{raylib_issue6361,
   title     = {{raylib Issue \#6361 / Pull Request \#6362}: Matrix stack underflow in {swPopMatrix()}},
   author    = {{raylib Maintainers}},
-  year      = {2024},
+  year      = {2026},
   howpublished = {GitHub Pull Request},
   note      = {Acknowledged; PR merged}
 }
@@ -100,7 +201,7 @@
 @misc{raylib_issue6378,
   title     = {{raylib Issue \#6378}: Out-of-bounds read in {ExportAutomationEventList()} with invalid event types},
   author    = {{raylib Maintainers}},
-  year      = {2024},
+  year      = {2026},
   howpublished = {GitHub Issue Report},
   note      = {Acknowledged; maintainer fixed}
 }
@@ -108,7 +209,7 @@
 @misc{raylib_issue6373,
   title     = {{raylib Issue \#6373}: Null-pointer dereference on allocation failure in {LoadWaveSamples()}},
   author    = {{raylib Maintainers}},
-  year      = {2024},
+  year      = {2026},
   howpublished = {GitHub Issue Report},
   note      = {Acknowledged; PR closed, maintainer fixed in commit 7639166}
 }
@@ -116,7 +217,7 @@
 @misc{drogon_pr2662,
   title     = {{Drogon Pull Request \#2662}: Process termination from filesystem errors in noexcept {HttpFileImpl} save methods},
   author    = {{Drogon Maintainers}},
-  year      = {2024},
+  year      = {2026},
   howpublished = {GitHub Pull Request},
   note      = {Closed; PR merged}
 }
@@ -124,7 +225,7 @@
 @misc{drogon_pr2656,
   title     = {{Drogon Pull Request \#2656}: Fix out-of-bounds iterator dereference in {HttpFileImpl::save()}},
   author    = {{Drogon Maintainers}},
-  year      = {2024},
+  year      = {2026},
   howpublished = {GitHub Pull Request},
   note      = {Issue raised; fixed in commit by maintainer after raised}
 }

@@ -8,20 +8,20 @@
       fill=black!10, draw=black!65, rounded corners=2pt, inner sep=2.5pt
     },
     tier1/.style={
-      draw=black!70, rounded corners=2pt, align=center, inner sep=2.5pt,
-      text width=53mm, minimum height=6.5mm, fill=white, font=\tiny, line width=0.5pt
+      draw=black!70, rounded corners=2pt, align=center, inner sep=2pt,
+      text width=53mm, minimum height=5.5mm, fill=white, font=\tiny, line width=0.5pt
     },
     tier2/.style={
-      draw=black!75, rounded corners=2pt, align=left, inner sep=3pt,
-      text width=53mm, minimum height=23.5mm, fill=white, font=\tiny, line width=0.6pt
+      draw=black!75, rounded corners=2pt, align=left, inner sep=2.5pt,
+      text width=53mm, minimum height=18.5mm, fill=white, font=\tiny, line width=0.6pt
     },
     tier3/.style={
-      draw=black!75, rounded corners=2pt, align=center, inner sep=3pt,
-      text width=53mm, minimum height=10mm, fill=black!5, font=\tiny, line width=0.6pt
+      draw=black!75, rounded corners=2pt, align=center, inner sep=2.5pt,
+      text width=53mm, minimum height=8mm, fill=black!5, font=\tiny, line width=0.6pt
     },
     tier4/.style={
-      draw=black!80, rounded corners=2pt, align=center, inner sep=2.5pt,
-      text width=53mm, minimum height=6.5mm, fill=black!12, font=\tiny, line width=0.6pt
+      draw=black!80, rounded corners=2pt, align=center, inner sep=2pt,
+      text width=53mm, minimum height=5.5mm, fill=black!12, font=\tiny, line width=0.6pt
     },
     arr/.style={->, line width=0.6pt, draw=black!80}
   ]
@@ -29,24 +29,24 @@
   % ================= PANEL A: RAYLIB =================
   \node[titlebox] (r_title) at (0, 0) {(a) \raylib Headless Multimedia Fuzzer};
 
-  \node[tier1, below=2.2mm of r_title] (r_in) {%
+  \node[tier1, below=1.5mm of r_title] (r_in) {%
     \textbf{Raw Byte Stream} $\to$ \texttt{fz\_rd} Parameter Reader%
   };
 
-  \node[tier2, below=2.2mm of r_in] (r_shim) {%
-    \textbf{Headless Runtime Shims (\texttt{PLATFORM\_MEMORY}):}\\[2pt]
+  \node[tier2, below=1.5mm of r_in] (r_shim) {%
+    \textbf{Headless Runtime Shims (\texttt{PLATFORM\_MEMORY}):}\\[1.5pt]
     $\triangleright$ \texttt{rlsw} software rasterizer \& virtual framebuffer\\
     $\triangleright$ In-memory VFS via \texttt{SetLoadFileCallback}\\
     $\triangleright$ Capped allocator (\texttt{RL\_MALLOC $\to$ fz\_malloc})\\
     $\triangleright$ Synchronous audio mixer pump (no sound hardware)%
   };
 
-  \node[tier3, below=2.2mm of r_shim] (r_tgt) {%
-    \textbf{37 Isolated Subsystem Target Binaries}\\[1.5pt]
+  \node[tier3, below=1.5mm of r_shim] (r_tgt) {%
+    \textbf{37 Isolated Subsystem Target Binaries}\\[1pt]
     Image VM (52 ops) $\bullet$ Render VM $\bullet$ Audio $\bullet$ Fonts $\bullet$ Models%
   };
 
-  \node[tier4, below=2.2mm of r_tgt] (r_ora) {%
+  \node[tier4, below=1.5mm of r_tgt] (r_ora) {%
     \textbf{Sanitizer Oracle (ASan / UBSan) \& Crash Triage}%
   };
 
@@ -57,24 +57,24 @@
   % ================= PANEL B: DROGON =================
   \node[titlebox] (d_title) at (60.5mm, 0) {(b) \drogon In-Memory Network Fuzzer};
 
-  \node[tier1, below=2.2mm of d_title] (d_in) {%
+  \node[tier1, below=1.5mm of d_title] (d_in) {%
     \textbf{Raw Stream} $\to$ Tail Slicer (trailing 4B schedule)%
   };
 
-  \node[tier2, below=2.2mm of d_in] (d_shim) {%
-    \textbf{In-Memory Network Shims (Zero OS Sockets):}\\[2pt]
+  \node[tier2, below=1.5mm of d_in] (d_shim) {%
+    \textbf{In-Memory Network Shims (Zero OS Sockets):}\\[1.5pt]
     $\triangleright$ \texttt{MockTcpConnection} captures virtual interface\\
     $\triangleright$ Thread-local \texttt{EventLoop} binding (race-free execution)\\
     $\triangleright$ Edge-biased slicing into \texttt{trantor::MsgBuffer}\\
     $\triangleright$ RAII \texttt{IterationSandbox} directory containment%
   };
 
-  \node[tier3, below=2.2mm of d_shim] (d_tgt) {%
-    \textbf{19 Stateful Network Target Binaries}\\[1.5pt]
+  \node[tier3, below=1.5mm of d_shim] (d_tgt) {%
+    \textbf{19 Stateful Network Target Binaries}\\[1pt]
     HttpRequest $\bullet$ HttpResponse $\bullet$ Multipart $\bullet$ WebSocket%
   };
 
-  \node[tier4, below=2.2mm of d_tgt] (d_ora) {%
+  \node[tier4, below=1.5mm of d_tgt] (d_ora) {%
     \textbf{Sanitizer Oracle (ASan / UBSan) \& Crash Triage}%
   };
 

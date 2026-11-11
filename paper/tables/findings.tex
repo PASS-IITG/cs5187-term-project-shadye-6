@@ -1,19 +1,18 @@
 \begin{table}[t]
-  \caption{Verified security vulnerabilities and defects discovered by \tool across the three subject systems and their upstream resolution status.}
+  \caption{Verified upstream security defects discovered by \tool across the three subject systems and their upstream resolution status.}
   \label{tab:findings}
   \resizebox{\linewidth}{!}{%
   \begin{tabular}{@{}lllllll@{}}
     \toprule
     ID & Target & Classification & CWE & Component & Trigger Condition & Upstream Status \\
     \midrule
-    \textbf{F1} & \fastgltf & Heap Buffer Overflow & CWE-122 & \texttt{generateMeshIndices} & Accessor index $\ge$ count & Closed; maintainer commit fixed~\cite{fastgltf_issue160} \\
-    \textbf{R1} & \raylib & Matrix Stack Underflow & CWE-119 & \texttt{swPopMatrix()} in \texttt{rlsw.h} & \texttt{stackCounter == 0} & Acknowledged; PR \#6362 merged~\cite{raylib_issue6361} \\
+    \textbf{F1} & \fastgltf & Out-of-Bounds Read & CWE-125 & \texttt{generateMeshIndices} & Accessor index $\ge$ count & Closed; maintainer fixed via commit~\cite{fastgltf_issue160} \\
+    \textbf{R1} & \raylib & Integer Underflow & CWE-191 & \texttt{swPopMatrix()} in \texttt{rlsw.h} & \texttt{stackCounter == 0} & Acknowledged; PR \#6362 merged~\cite{raylib_issue6361} \\
     \textbf{R2} & \raylib & Out-of-Bounds Read & CWE-125 & \texttt{ExportAutomationEventList} & \texttt{event.type $\ge$ 24} & Acknowledged; maintainer fixed~\cite{raylib_issue6378} \\
-    \textbf{R3} & \raylib & NULL Pointer Dereference & CWE-476 & \texttt{LoadWaveSamples()} & Large sample allocation & Acknowledged; commit 7639166~\cite{raylib_issue6373} \\
+    \textbf{R3} & \raylib & NULL Pointer Dereference & CWE-476 & \texttt{LoadWaveSamples()} & Large sample allocation & Acknowledged; maintainer fixed (commit 7639166)~\cite{raylib_issue6373} \\
     \textbf{D1} & \drogon & Process Abort in \texttt{noexcept} & CWE-755 & \texttt{HttpFileImpl::save} & Filename $>255$ bytes & Closed; PR \#2662 merged~\cite{drogon_pr2662} \\
-    \textbf{D2} & \drogon & Iterator Out-of-Bounds & CWE-125 & \texttt{HttpFileImpl::save} & Traversal prefix \texttt{../../c} & Closed; maintainer commit fixed~\cite{drogon_pr2656} \\
+    \textbf{D2} & \drogon & Out-of-Bounds Iterator & CWE-125 & \texttt{HttpFileImpl::save} & Traversal prefix \texttt{../../c} & Closed; maintainer fixed via commit~\cite{drogon_pr2656} \\
     \bottomrule
   \end{tabular}%
   }
 \end{table}
-

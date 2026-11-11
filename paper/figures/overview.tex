@@ -7,12 +7,12 @@
       fill=black!10, draw=black!60, rounded corners=2pt, inner sep=2pt
     },
     stagecard/.style={
-      draw=black!70, rounded corners=2pt, align=left, inner sep=3pt,
-      text width=32.5mm, minimum height=16.5mm, fill=white, font=\tiny, line width=0.5pt
+      draw=black!70, rounded corners=2pt, align=left, inner sep=2.5pt,
+      text width=32.5mm, minimum height=13.5mm, fill=white, font=\tiny, line width=0.5pt
     },
     oraclecard/.style={
-      draw=black!75, rounded corners=2pt, align=center, inner sep=3.5pt,
-      text width=113mm, minimum height=9mm, fill=black!7, font=\tiny, line width=0.6pt
+      draw=black!75, rounded corners=2pt, align=center, inner sep=2.5pt,
+      text width=113mm, minimum height=7.5mm, fill=black!7, font=\tiny, line width=0.6pt
     },
     flow/.style={->, line width=0.6pt, draw=black!85},
     back/.style={->, line width=0.6pt, dashed, draw=black!75},
@@ -46,7 +46,7 @@
   };
 
   % Combined Oracle & Feedback Layer
-  \node[oraclecard, below=5.5mm of s2] (o) {%
+  \node[oraclecard, below=3.5mm of s2] (o) {%
     \textbf{Sanitizer Oracle (ASan / UBSan) \& Linker Coverage Interception (\texttt{-Wl,--wrap})}\\[1.5pt]
     Dual-channel edge telemetry $\bullet$ Crash triage engine $\bullet$ 16 discovered security defects%
   };

@@ -1,42 +1,41 @@
 \section{Problem Statement}
 \label{sec:problem}
 
-We now state the problem precisely.
-A complex C or C++ software system consists of multiple subsystems that receive inputs across distinct domains:
+A complex software system consists of multiple subsystems that receive inputs across distinct domains:
 structured file formats ($\mathcal{D}_{\text{file}}$),
 multimedia memory streams ($\mathcal{D}_{\text{media}}$), and
 asynchronous network packets ($\mathcal{D}_{\text{net}}$).
 
 Each domain presents a distinct impedance mismatch for coverage-guided fuzzers:
 \begin{enumerate}
-  \item \textbf{Syntactic vs.\ Semantic Barriers ($\mathcal{D}_{\text{file}}$):}
-  Binary formats such as glTF reject unstructured inputs during header and magic byte validation.
+  \item \textbf{Syntactic Barriers ($\mathcal{D}_{\text{file}}$):}
+  Binary formats such as glTF reject unstructured inputs during header validation.
   Mutators must produce structurally valid inputs to reach deep accessor decoding logic.
   \item \textbf{Environmental Dependencies ($\mathcal{D}_{\text{media}}$):}
-  Game and graphics libraries expect window contexts, framebuffers, and audio mixing devices.
+  Game and graphics libraries expect display windows, framebuffers, and audio mixing devices.
   Fuzzing through standard entry points requires graphical display servers and operating system audio drivers, which reduces throughput.
   \item \textbf{Asynchronous Statefulness ($\mathcal{D}_{\text{net}}$):}
   Network frameworks process streaming data through non-blocking sockets and asynchronous callbacks.
   Traditional network fuzzers interact through real network interfaces, incurring TCP handshake overhead and socket exhaustion.
 \end{enumerate}
 
-\paragraph{Goal.}
-Let $\mathcal{T} = \{t_1, t_2, \dots, t_M\}$ denote a collection of target functions across the system, and let $\mathcal{M} = \{m_1, m_2, \dots, m_K\}$ represent a set of mutation operators.
-Each target $t_j$ produces execution traces covering a set of branch edges $E(t_j) \subseteq \mathcal{E}$.
-Given an execution budget of $\TotalPulls$ iterations, our goal is to find an adaptive selection policy $\pi: \mathcal{H} \to \mathcal{M}$ over execution history $\mathcal{H}$ that maximizes the total discovered edge coverage:
+\paragraph{Formulation.}
+Let $\mathcal{M} = \{m_1, m_2, \dots, m_K\}$ represent a shared library of mutation operators.
+For a target harness $t$, the execution of an input generates a trace covering a set of branch edges $E(t) \subseteq \mathcal{E}$.
+Given a wall-clock testing budget $B$, the goal of the adaptive selection policy $\pi: \mathcal{H} \to \mathcal{M}$ is to maximize discovered edge coverage:
 \begin{equation}
 \label{eq:goal}
-\max_{\pi} \left| \bigcup_{j=1}^{M} E(t_j) \right|
-\quad \text{subject to} \quad \sum_{j=1}^{M} \text{Time}(t_j) \le B
+\max_{\pi} |E(t)| \quad \text{subject to} \quad \text{Time}(t) \le B
 \end{equation}
-where $B$ represents the total wall-clock testing budget.
+where $\mathcal{H}$ denotes the execution and reward history.
 
 \paragraph{Why not write independent custom fuzzers for each domain?}
-Building custom fuzzers for each individual domain duplicates mutation logic and prevents cross-pollination of mutator improvements.
-A mutation operator that successfully discovers integer overflow boundaries in 3D vertex buffers is equally effective at finding Content-Length parsing flaws in HTTP request headers.
-A unified architecture allows shared bandit steering across all targets.
+Building independent fuzzers for each domain duplicates mutation logic and prevents code reuse.
+A mutation operator that uncovers integer boundaries in 3D vertex buffers is equally effective at finding Content-Length parsing flaws in HTTP request headers.
+\tool provides a shared operator framework across domains, while instantiating bandit schedulers per target to dynamically learn domain-specific operator preferences.
 
 \paragraph{Why not test network targets through real operating system sockets?}
-Network fuzzers that communicate over loopback TCP sockets suffer from operating system scheduling, packet serialization, and kernel socket buffer allocations.
-In our measurements on \drogon, testing via loopback sockets capped throughput to 240 executions per second per core.
-In contrast, headless in-memory shims achieved over 53{,}000 executions per second on the same parser logic.
+Network fuzzers that communicate over loopback TCP sockets incur operating system scheduling, packet serialization, and kernel socket buffer allocations.
+When a fuzzer establishes fresh TCP connections per test input, socket allocation and \texttt{TIME\_WAIT} exhaustion cap throughput to approximately 240 executions per second per core.
+Even with persistent keep-alive connections, loopback throughput peaks below 1{,}900 executions per second due to kernel context switching.
+In contrast, driving parser callbacks directly in memory via \texttt{MockTcpConnection} reaches up to 53{,}732 executions per second on the same parsing logic.
