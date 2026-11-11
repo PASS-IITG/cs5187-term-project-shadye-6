@@ -1,8 +1,7 @@
 \section{Conclusion}
 \label{sec:conclusion}
-%% Two short paragraphs. (1) The problem again in 2-3 sentences with the key
-%% number. (2) "We presented \tool, which ..." + the main results with the
-%% same numbers as the abstract. No new claims, no new numbers, no hype.
-\todo{Problem and key number.}
-
-We presented \tool, which \todo{}.
+Modern software stacks integrate diverse input formats, from 3D models to graphics rendering and asynchronous network requests.
+Testing these layered architectures with flat fuzzers leads to low throughput and missed defects from environment dependencies.
+We presented \tool, an adaptive fuzzing architecture combining structure-aware mutation, a UCB1 bandit scheduler, and domain-specialized headless in-memory shims.
+Across 59 target binaries in \fastgltf, \raylib, and \drogon, \tool executed 807{,}520{,}128 inputs and discovered 16 security vulnerabilities, comprising six upstream-resolved defects alongside ten additional medium- and high-severity findings.
+Decoupling coverage accounting via linker wrapping and isolating subsystems into in-memory mocks enables high-throughput security testing across diverse software domains.

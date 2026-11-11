@@ -1,16 +1,22 @@
 \section{Threats to Validity}
 \label{sec:threats}
-%% Internal / External / Construct. For each threat: what it is, what we did
-%% about it (itemize if several guards), what remains. Report non-determinism
-%% and LLM run-to-run variation with numbers.
-\focus{\textbf{Threats to validity.} Be honest about what could make your
-  conclusions wrong. Cover all three kinds below. For each: name the threat,
-  say what you did to reduce it (itemise the guards), and what still remains.
-  Report any non-determinism or run-to-run variation with numbers. Graded on
-  honesty, not on having zero threats.}
 
-\paragraph{Internal threats.} \todo{}
+\paragraph{Internal Validity.}
+Fuzz testing is inherently non-deterministic.
+Random seeds, mutator selection choices, and system scheduling can produce variation across experimental runs.
+To mitigate this threat:
+(i)~For \fastgltf, we executed 5 independent trials per mutation arm with random seeds, reporting median values and interquartile ranges (IQR) across 15 trials;
+(ii)~For \raylib and \drogon, we executed extensive multi-worker campaigns totaling 54.3 million and 750 million inputs to observe long-term convergence;
+(iii)~We verified every discovered defect using deterministic, standalone C++ reproducers that replay the exact crashing input independently of the fuzzer runtime.
 
-\paragraph{External threats.} \todo{Subjects, platform, versions.}
+\paragraph{External Validity.}
+Our evaluation examines three open-source C and C++ projects: \fastgltf, \raylib, and \drogon.
+These three projects may not be representative of all C/C++ software.
+To mitigate this threat, we selected mature, production-grade systems spanning three distinct architectural domains: 3D binary file parsing, interactive multimedia rendering, and high-concurrency network servers.
+However, our conclusions may not directly generalize to bare-metal embedded firmware or safety-critical real-time operating systems.
 
-\paragraph{Construct threats.} \todo{Does the metric measure what we claim?}
+\paragraph{Construct Validity.}
+A potential threat is whether branch edge coverage accurately reflects software security testing effectiveness.
+High coverage does not guarantee that all vulnerabilities will be triggered.
+To mitigate this threat, we paired coverage feedback with AddressSanitizer and UndefinedBehaviorSanitizer instrumentation.
+Furthermore, we evaluated bug-finding effectiveness by reporting candidate defects to the upstream maintainers and confirming their security impact through merged pull requests and official bug trackers.
