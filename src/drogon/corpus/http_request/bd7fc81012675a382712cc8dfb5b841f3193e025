@@ -1,0 +1,6 @@
+GET / HTTP/1.1
+Hos : alhost
+
+GET /echo HTTP/1.1
+
+t: loc

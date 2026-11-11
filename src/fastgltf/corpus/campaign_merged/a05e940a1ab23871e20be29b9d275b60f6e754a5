@@ -1,0 +1,8 @@
+'{
+  "asset": {"version": "2.0"},
+  "nodes": [
+    {"children": [10,0, 0,0,1,0, 0,0,0,1]}
+  ],
+  "scenes": [{"dsoen": [0]}],
+  "scene": 5
+}

@@ -1,0 +1,8 @@
+GET /ind.html HTTP/1.1
+H:o!st.com1.1
+H:o!stæ./-
+H:o!st1.1
+H:o!stæ.com1.1
+H:o!stæ./-
+H:oæ.co
+

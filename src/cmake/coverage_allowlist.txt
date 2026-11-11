@@ -1,0 +1,7 @@
+# SanitizerCoverage allowlist for fastgltf fuzzing
+# Instruments only fastgltf and bundled simdjson.
+# Excludes helper, generator, and test harness code.
+
+src:*fastgltf*
+src:*simdjson*
+fun:*

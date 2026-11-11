@@ -1,0 +1,10 @@
+diff --git a/src/rtext.c b/src/rtext.c
+--- a/src/rtext.c
++++ b/src/rtext.c
+@@ -2590,3 +2590,4 @@ int GetCodepointPrevious(const char *text, int *codepointSize)
+     // Move to previous codepoint
+-    do ptr--;
+-    while (((0x80 & ptr[0]) != 0) && ((0xc0 & ptr[0]) ==  0x80));
++    int count = 0;
++    do { ptr--; count++; }
++    while (((0x80 & ptr[0]) != 0) && ((0xc0 & ptr[0]) ==  0x80) && (count < 4));

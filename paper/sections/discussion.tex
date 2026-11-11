@@ -1,6 +1,43 @@
 \section{Discussion}
 \label{sec:discussion}
-%% Question-style paragraphs that answer what a reviewer will ask:
-%%   \paragraph{Is more X always better?} No. ...
-%% End limits with "We leave this for future work." -- do not hide them.
-\paragraph{\todo{Reviewer question}?} \todo{Short, honest answer.}
+
+\paragraph{Why did the \fastgltf architecture transfer to multimedia and network servers?}
+At first glance, 3D mesh decoding, game rendering, and HTTP web serving appear to be unrelated domains.
+However, their vulnerability profiles share common mechanisms.
+All three domains process hierarchical, structured data containing lengths, offsets, and binary buffers.
+An operator injecting extreme integer boundaries into glTF buffer views is equally effective at triggering integer overflows in \raylib audio calculations or \drogon \texttt{Content-Length} headers.
+Our empirical results confirm that structure-aware mutators paired with an adaptive bandit transfer across domain boundaries without requiring entirely new fuzzing engines.
+
+\paragraph{Do headless in-memory shims miss real bugs?}
+Headless shims abstract operating system sockets and graphics displays, bypassing kernel TCP stacks and hardware drivers.
+However, memory corruptions, buffer overflows, and parser desynchronizations reside in user-space application code.
+Testing in memory allows executing hundreds of millions of iterations that would be computationally impractical over physical hardware or loopback sockets.
+
+\paragraph{Why are \texttt{noexcept} filesystem operations a severe threat to web server reliability?}
+C++ developers frequently mark file management methods \texttt{noexcept} to satisfy interface contracts or signal intended exception safety.
+However, standard filesystem functions throw \texttt{std::filesystem\_error} upon encountering unexpected runtime conditions, such as filenames exceeding length limits.
+When an exception escapes a \texttt{noexcept} boundary, the runtime aborts the process via \texttt{std::terminate()}.
+Because web servers run multiple worker threads within a single address space, a single malformed upload crashes the entire service.
+Developers must consistently use non-throwing \texttt{std::error\_code} overloads in all paths processing untrusted inputs.
+
+We leave the automated generation of headless mock shims from interface definitions for future work.
+
+\subsection{Threats to Validity}
+\label{sec:threats}
+
+\paragraph{Internal Validity.}
+Fuzz testing is inherently non-deterministic.
+Random seeds, mutator selection choices, and system scheduling can produce variation across experimental runs.
+To mitigate this threat, we executed 5 independent trials per arm on \fastgltf, multi-worker campaigns totaling 804 million inputs on \raylib and \drogon, and verified all defects with standalone C++ reproducers.
+
+\paragraph{External Validity.}
+Our evaluation examines three open-source C and C++ projects: \fastgltf, \raylib, and \drogon.
+These three projects may not be representative of all C/C++ software.
+To mitigate this threat, we selected mature systems spanning three distinct architectural domains: 3D binary file parsing, interactive multimedia rendering, and high-concurrency network servers.
+However, our conclusions may not directly generalize to bare-metal embedded firmware or safety-critical real-time operating systems.
+
+\paragraph{Construct Validity.}
+A potential threat is whether branch edge coverage accurately reflects software security testing effectiveness.
+High coverage does not guarantee that all vulnerabilities will be triggered.
+To mitigate this threat, we paired coverage feedback with AddressSanitizer and UndefinedBehaviorSanitizer instrumentation.
+Furthermore, we evaluated bug-finding effectiveness by reporting candidate defects to the upstream maintainers and confirming their security impact through merged pull requests and official bug trackers.

@@ -1,0 +1,30 @@
+POST / HTTP/1.1
+Hos : localmost
+CcodinÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿTyyg: apl˜œ
+3‹
+hello
+GET / HTTP/1.1
+Host: localhost
+
+GET /echo HTTP/1.1
+Host: localost: lÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜocalhost
+
+GET /echo HTTP/1.1
+Host: locÿÿnsfer-Encolhost
+
+GET /echo HTTP/1.1
+Host: localost: localhost
+
+GET /echo HTTP/1.1
+Host: localhost
+Content-Lalhost
+Content-Length: 2
+
+hos
+t
+Content-Length: 1
+
+te
+0
+
+

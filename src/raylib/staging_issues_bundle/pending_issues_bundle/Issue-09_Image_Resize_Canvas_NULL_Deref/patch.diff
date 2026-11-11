@@ -1,0 +1,15 @@
+--- a/src/rtextures.c
++++ b/src/rtextures.c
+@@ -1916,6 +1916,12 @@ void ImageResizeCanvas(Image *image, int newWidth, int newHeight, int offsetX, i
+         int bytesPerPixel = GetPixelDataSize(1, 1, image->format);
+         unsigned char *resizedData = (unsigned char *)RL_CALLOC(newWidth*newHeight*bytesPerPixel, 1);
+
++        if (resizedData == NULL)
++        {
++            TRACELOG(LOG_WARNING, "IMAGE: Failed to allocate memory for resized canvas");
++            return;
++        }
++
+         // Fill resized canvas with fill color
+         // Set first pixel with image->format
+         SetPixelColor(resizedData, fill, image->format);

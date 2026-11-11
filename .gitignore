@@ -1,0 +1,37 @@
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.blg
+*.bbl
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+main.pdf
+
+# Fuzzer, compiler, and temporary working directories
+out/
+work/
+build/
+cmake-build-*/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.zip
+
+# Raw campaign logs and generated HTML coverage dumps
+*.log
+src/drogon/reports/*.log
+**/coverage_report/
+**/coverage_report_final/
+**/raylib-fuzz-report/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+*~
+*.swp
+commit_plan.sh

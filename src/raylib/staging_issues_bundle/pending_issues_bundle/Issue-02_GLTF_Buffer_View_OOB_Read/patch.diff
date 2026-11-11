@@ -1,0 +1,89 @@
+diff --git a/src/rmodels.c b/src/rmodels.c
+--- a/src/rmodels.c
++++ b/src/rmodels.c
+@@ -5362,7 +5362,14 @@ static cgltf_result LoadFileGLTFCallback(const struct cgltf_memory_options *memo
+ 
+     if (filedata == NULL) return cgltf_result_io_error;
+ 
+-    *size = filesize;
++    if ((size != NULL) && (*size > 0) && ((cgltf_size)filesize < *size))
++    {
++        TRACELOG(LOG_WARNING, "MODEL: [%s] File size smaller than expected buffer size", path);
++        UnloadFileData(filedata);
++        return cgltf_result_data_too_short;
++    }
++
++    if (size != NULL) *size = filesize;
+     *data = filedata;
+ 
+     return cgltf_result_success;
+@@ -5522,16 +5529,122 @@ static Model LoadGLTF(const char *fileName)
+ 
+     #define LOAD_ATTRIBUTE_CAST(accesor, numComp, srcType, dstPtr, dstType) \
+     { \
+-        int n = 0; \
+-        srcType *buffer = (srcType *)accesor->buffer_view->buffer->data + accesor->buffer_view->offset/sizeof(srcType) + accesor->offset/sizeof(srcType); \
+-        for (unsigned int k = 0; k < accesor->count; k++) \
+-        {\
+-            for (int l = 0; l < numComp; l++) \
+-            {\
+-                dstPtr[numComp*k + l] = (dstType)buffer[n + l];\
+-            }\
+-            n += (int)(accesor->stride/sizeof(srcType));\
+-        }\
++        if (((accesor) != NULL) && ((dstPtr) != NULL) && ((accesor)->count > 0)) \
++        { \
++            cgltf_size _elemSize = (cgltf_size)(numComp)*sizeof(srcType); \
++            cgltf_size _stride = (accesor)->stride ? (accesor)->stride : _elemSize; \
++            if ((accesor)->buffer_view != NULL) \
++            { \
++                if (((accesor)->buffer_view->buffer == NULL) || ((accesor)->buffer_view->buffer->data == NULL)) \
++                { \
++                    memset((dstPtr), 0, (size_t)(accesor)->count*(size_t)(numComp)*sizeof(dstType)); \
++                } \
++                else \
++                { \
++                    cgltf_size _bv_off = (accesor)->buffer_view->offset; \
++                    cgltf_size _bv_sz = (accesor)->buffer_view->size; \
++                    cgltf_size _b_sz = (accesor)->buffer_view->buffer->size; \
++                    bool _bv_valid = (_bv_off <= _b_sz) && (_bv_sz <= _b_sz - _bv_off); \
++                    bool _acc_valid = false; \
++                    if (_bv_valid && ((accesor)->offset <= _bv_sz)) \
++                    { \
++                        cgltf_size _rem = _bv_sz - (accesor)->offset; \
++                        if ((accesor)->count == 1) _acc_valid = (_elemSize <= _rem); \
++                        else \
++                        { \
++                            cgltf_size _span = (accesor)->count - 1; \
++                            if (_elemSize <= _rem) \
++                            { \
++                                cgltf_size _space_for_stride = _rem - _elemSize; \
++                                _acc_valid = (_stride == 0) || (_span <= _space_for_stride/_stride); \
++                            } \
++                        } \
++                    } \
++                    if (_acc_valid) \
++                    { \
++                        const unsigned char *_base = (const unsigned char *)(accesor)->buffer_view->buffer->data + (accesor)->buffer_view->offset + (accesor)->offset; \
++                        for (cgltf_size _k = 0; _k < (accesor)->count; _k++) \
++                        { \
++                            const srcType *_src = (const srcType *)(_base + _k*_stride); \
++                            for (int _l = 0; _l < (numComp); _l++) \
++                            { \
++                                (dstPtr)[(cgltf_size)(numComp)*_k + _l] = (dstType)_src[_l]; \
++                            } \
++                        } \
++                    } \
++                    else \
++                    { \
++                        TRACELOG(LOG_WARNING, "MODEL: [%s] glTF accessor buffer range exceeds bufferView size", fileName); \
++                        memset((dstPtr), 0, (size_t)(accesor)->count*(size_t)(numComp)*sizeof(dstType)); \
++                    } \
++                } \
++            } \
++            else \
++            { \
++                memset((dstPtr), 0, (size_t)(accesor)->count*(size_t)(numComp)*sizeof(dstType)); \
++            } \
++        } \
+     }

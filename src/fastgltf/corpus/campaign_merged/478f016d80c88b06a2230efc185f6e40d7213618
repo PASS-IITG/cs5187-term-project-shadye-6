@@ -1,0 +1,13 @@
+{
+    "asset": {
+        "version": "2.0"
+    },
+    "etxensionsUsed": [
+        "GUDOT_single_root"
+    ],
+    "nodes": [
+        {
+          },
+        {
+            "odes": [0] }]
+}

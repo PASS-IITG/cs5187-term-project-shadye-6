@@ -1,0 +1,8 @@
+GET / HTTP/1.1
+Hot: lcalhkst
+
+GET /%cha HTTP/1.1
+Host: localhost
+Content-Length: 8
+
+test

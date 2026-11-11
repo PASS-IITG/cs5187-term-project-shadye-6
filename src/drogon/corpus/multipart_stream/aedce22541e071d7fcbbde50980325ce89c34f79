@@ -1,0 +1,9 @@
+-----er
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-kTrZu0gW
+Content-Disposime="upload"; filename="hello.txt"
+Content-Tydata; name="upload"; filename="hello.txt"
+Content-Type: text/plain
+
+Hello, Drogon multipart fuzzer!
+------WebKitFormBoundary7MA4YWxkTrZu0gW--

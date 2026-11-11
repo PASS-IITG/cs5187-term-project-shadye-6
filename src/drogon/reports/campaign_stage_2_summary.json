@@ -1,0 +1,72 @@
+[
+  {
+    "target": "fuzz_http_request_fragmented",
+    "status": 0,
+    "time": 61,
+    "final_cov": "1412",
+    "execs": 290559,
+    "initial_seeds": 679,
+    "final_seeds": 1255,
+    "new_crashes": [],
+    "crash_count": 0
+  },
+  {
+    "target": "fuzz_http_response_fragmented",
+    "status": 77,
+    "time": 0,
+    "final_cov": "1079",
+    "execs": 24,
+    "initial_seeds": 67,
+    "final_seeds": 103,
+    "new_crashes": [
+      "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/crash-6cb7836dc05ed7fcbfb7b757ce638a9f45714d72"
+    ],
+    "crash_count": 1
+  },
+  {
+    "target": "fuzz_multipart_stream",
+    "status": 77,
+    "time": 5,
+    "final_cov": "1012",
+    "execs": 18,
+    "initial_seeds": 321,
+    "final_seeds": 495,
+    "new_crashes": [
+      "/mnt/c/Users/dxksh/Desktop/swa/dragon/drogon-fuzz/findings/artifacts/crash-4a83e1cdc531b3b42c0b9078dc80fa2c1eb6a7ef"
+    ],
+    "crash_count": 1
+  },
+  {
+    "target": "fuzz_websocket_session",
+    "status": 0,
+    "time": 61,
+    "final_cov": "384",
+    "execs": 1067605,
+    "initial_seeds": 462,
+    "final_seeds": 762,
+    "new_crashes": [],
+    "crash_count": 0
+  },
+  {
+    "target": "fuzz_llhttp_differential",
+    "status": 0,
+    "time": 61,
+    "final_cov": "2074",
+    "execs": 344811,
+    "initial_seeds": 879,
+    "final_seeds": 1571,
+    "new_crashes": [],
+    "crash_count": 0
+  },
+  {
+    "target": "fuzz_kitchen_sink",
+    "status": 0,
+    "time": 61,
+    "final_cov": "3131",
+    "execs": 294519,
+    "initial_seeds": 36,
+    "final_seeds": 561,
+    "new_crashes": [],
+    "crash_count": 0
+  }
+]

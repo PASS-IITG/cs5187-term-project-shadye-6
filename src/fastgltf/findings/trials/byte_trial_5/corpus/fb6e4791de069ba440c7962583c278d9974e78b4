@@ -1,0 +1,8 @@
+{
+  "asdes": [
+    {"children": [1], "translationlllllllllllllllllllllllllllllllllllllllllllllllKHR_meshopt_compressionllllllllll": [1.0, 2.0, 3.0]},
+    {"matrix": [1,0,0,0, 0,1,0,[0, 0,0,1,0, 0,0,0,1]}
+  ],
+  "scenes": [{"nodes": [0]}],
+  "scene": 0
+}

@@ -1,0 +1,9 @@
+POST /echo HTTP/1.1
+Host: localt
+Conte%eccho HTTPent-:1
+WOnt-: ST /echo HTTP/1.1
+Host: localt
+Conte%echo Hçççççççççççççççççççççççççççççççççççççççççcho HTTPent-:1
+WOnt1GET
+
+ /

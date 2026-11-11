@@ -1,0 +1,10 @@
+GET ch HTTP/1.1
+
+MKCOL cGET+cl HTTP/1.1
+
+MKCOL ch HTTP/1.1
+
+MKCOL lh HTTP/1.1
+
+MKCOL locà’o
+c

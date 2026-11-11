@@ -1,44 +1,59 @@
 \section{Introduction}
 \label{sec:intro}
-%% Paragraph plan (each paragraph = one job; keep to this order):
-%%  P1  Concrete scenario the reader knows: "Suppose you want to ...".
-%%      State what existing tools need or do, with citations.
-%%  P2  The first/known problem and who already works on it (cite).
-%%      End with where they stop: "These tools stop when ...".
-%%  P3  OUR problem, in plain words: "We focus on a second problem that
-%%      starts where they stop: ...". Why it is silent/dangerous.
-%%  P4  A real example with exact numbers, pointing to a figure
-%%      (Figure~\ref{fig:motivating}). Then "This is not a single case." + count.
-%%  P5  Prior work on the closest idea and its precise gap
-%%      ("However, they need ...", "Their method depends on ...").
-%%  P6  "We bring/We present \tool ..." + numbered steps (enumerate), each
-%%      step one sentence, each pointing to its section. Then list outputs.
-%%  P7  First results with numbers, and one lesson learned.
-%%  Contributions (itemize), each item ending in (Section~\ref{...}).
 
-\todo{P1: scenario.}
+Suppose you need to test a high-performance C++ software stack that accepts inputs from multiple channels.
+One component parses 3D binary assets, a second component renders graphics and decodes audio frames, and a third component accepts HTTP requests and file uploads over the network.
+Developers commonly run coverage-guided fuzzers such as libFuzzer~\cite{serebryany2016libfuzzer} or AFL++~\cite{fioraldi2020aflplusplus} on individual functions.
 
-\focus{\textbf{Motivating example.} Give one \emph{real} case (a bug report,
-  a CVE, a failing test, a slow build, a measured number) that shows the
-  problem is real and worth solving. Point to Figure~\ref{fig:motivating},
-  use exact numbers, then add one sentence proving it is not a one-off
-  (``This is not a single case.'' + a count). This is graded: no toy or
-  imaginary example.}
+These tools work well on standalone byte parsers.
+They mutate raw input buffers and track branch coverage using compiler instrumentation.
+However, these tools stop when the software interacts with stateful runtime environments, external graphics displays, or asynchronous network event loops.
+Traditional fuzzers either require writing bespoke mock harnesses for every component or suffer from low execution throughput when executing full integration builds.
 
-\paragraph{Contributions.}
-\begin{itemize}
-  \item We define \todo{concept} (Section~\ref{sec:problem}).
-  \item We present \tool, which \todo{what} (Section~\ref{sec:approach}).
-  \item We evaluate \tool on \todo{n} \todo{subjects} (Section~\ref{sec:eval}).
-  \item We release the tool and all data (Section~\ref{sec:data}).
-\end{itemize}
+We focus on the problem of building a unified adaptive fuzzing architecture that scales across diverse software layers.
+Starting from a pure structured file format parser, our goal is to extend the same core mutator and scheduler to multimedia runtimes and asynchronous web frameworks without losing execution speed or bug-finding capability.
 
 \begin{figure}[t]
 \begin{lstlisting}[numbers=none,escapechar=@]
-// the real code / input that shows the problem, trimmed with ...
+int HttpFileImpl::save(const std::string &p) const noexcept {
+    if (!std::filesystem::exists(p)) { // Throws on len > 255
+        std::filesystem::create_directories(p);
+    }
+} // Escaping exception in noexcept invokes std::terminate()
 \end{lstlisting}
-\caption{\textcolor{red}{[Motivating example --- graded]} A real case of the
-  problem. \todo{The caption states the lesson, with the exact number, so a
-  reader who reads only captions gets it.}}
+\caption{Motivating defect from \drogon (\textbf{D1}). Calling throwing \texttt{std::filesystem::exists} inside a \texttt{noexcept} method causes \texttt{std::terminate()} to abort the process.}
 \label{fig:motivating}
 \end{figure}
+
+Consider the defect in Figure~\ref{fig:motivating}, discovered by our fuzzer in the \drogon C++ web framework.
+The method \texttt{HttpFileImpl::save} was declared \texttt{noexcept}.
+When an HTTP multipart request uploaded a file whose name exceeded the filesystem limit (255 bytes on Linux), the call to \texttt{std::filesystem::exists} threw a \texttt{std::filesystem\_error}.
+Because the enclosing method was marked \texttt{noexcept}, the C++ runtime intercepted the uncaught exception and immediately invoked \texttt{std::terminate()}.
+A single malformed upload killed the entire multi-threaded web server process.
+This was not an isolated failure.
+Across the three evaluated codebases, we uncovered 16 security and reliability defects spanning memory corruption, buffer overflows, and state desynchronization.
+
+Prior work on structure-aware fuzzing handles complex file grammars through custom mutators.
+However, existing grammar fuzzers do not provide headless shims for interactive game engines or asynchronous network protocols.
+Conversely, network fuzzers send packets over real operating system sockets, which restricts throughput to hundreds of executions per second.
+
+We present \tool, an adaptive fuzzing architecture designed to test heterogeneous C and C++ software stacks.
+\tool operates in four steps:
+(i)~it provides an adaptive mutation scheduler governed by a UCB1 multi-armed bandit algorithm (Section~\ref{sec:base_engine});
+(ii)~it extends structured mutation from binary asset parsing to multimedia rendering through headless shims (Section~\ref{sec:multimedia_ext});
+(iii)~it extends execution to asynchronous network servers through in-memory TCP socket mocks (Section~\ref{sec:network_ext}); and
+(iv)~it decouples coverage accounting from libFuzzer through GNU linker symbol wrapping (Section~\ref{sec:linker_wrapping}).
+
+We evaluated \tool across three software projects: the \fastgltf 3D parser, the \raylib game engine, and the \drogon asynchronous web framework.
+Across 59 target binaries, the tool executed 807{,}520{,}128 campaign iterations.
+\tool discovered 16 security vulnerabilities and defects, resulting in 6 upstream-resolved defects alongside 10 unfiled medium- and high-severity findings.
+Our results demonstrate that modular headless shims allow an in-memory fuzzer to exceed 50{,}000 executions per second on network parsers while discovering real-world vulnerabilities.
+
+\paragraph{Contributions.}
+\begin{itemize}
+  \item We formalize the problem of cross-domain fuzzer adaptation across file formats, multimedia runtimes, and network services (Section~\ref{sec:problem}).
+  \item We present \tool, an adaptive architecture combining structure-aware mutation, a UCB1 bandit scheduler, and linker-wrapped coverage interception (Section~\ref{sec:approach}).
+  \item We describe domain-specific headless shims for software rasterizers, audio streams, and asynchronous event loops (Section~\ref{sec:approach}).
+  \item We evaluate \tool across three open-source systems, analyzing 807 million executions and documenting 6 verified defects (Section~\ref{sec:eval}).
+  \item We release our fuzz targets, seed corpora, and reproducers (Section~\ref{sec:data}).
+\end{itemize}

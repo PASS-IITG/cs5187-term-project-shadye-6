@@ -1,0 +1,5 @@
+÷POST /echo HTTP/1.0
+Host:locaosT
+Content-Length: 6
+
+T /echo HTTPEST

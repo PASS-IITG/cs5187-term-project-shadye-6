@@ -1,0 +1,13 @@
+GET / HTTP/1.1
+Hot: lcookieocalhkst
+
+GET /%cha HTTP/1.1
+: lcookieocalhst
+
+GET /%cha HTTP/1.1
+:kieocalhkst
+
+GET /%cha HTÿP/1.1
+8
+
+test

@@ -1,11 +1,7 @@
-%% ABSTRACT (150-250 words, one paragraph, no citations, no \ref).
-%% Pattern (from earlier papers):
-%%  1. The problem in 2-3 short sentences. Plain words; what tools do today.
-%%  2. Why it matters: ONE concrete, real case with an exact number
-%%     (e.g. a CVE, a miscompilation, a measured share).
-%%  3. "We present \tool." What it does, in steps, in one or two sentences.
-%%  4. Results with numbers: "On X, \tool ... from A\% to B\%."
-%%  5. One honest lesson or surprise the work taught ("The run also shows ...").
-%% No "novel", no "we propose a framework", no promises without numbers.
-\todo{Problem in two sentences.} \todo{One real case with a number.}
-We present \tool. \todo{What it does.} \todo{Results with numbers.}
+C and C++ software stacks handling complex inputs remain vulnerable to memory safety violations and unexpected aborts.
+In the \drogon asynchronous web framework, an uncaught filesystem error inside a method marked \texttt{noexcept} triggered immediate process termination, taking down the entire web server upon receiving an upload with an oversized filename.
+We present \tool, an adaptive fuzzing framework that combines structure-aware mutation, an independent multi-armed bandit scheduler, and domain-specialized headless in-memory shims.
+We started with a structured asset fuzzer architecture for \fastgltf, then extended it to interactive multimedia and audio drivers in \raylib, and finally to asynchronous network protocols and filesystem operations in \drogon.
+Across 59 target binaries in the three systems, \tool executed 807{,}520{,}128 test inputs.
+The tool discovered 16 security vulnerabilities across the three codebases, including six upstream-resolved defects that led to merged pull requests and maintainer fixes.
+Our results show that decoupling coverage accounting from compiler runtimes and isolating stateful subsystems into headless in-memory targets allows a single fuzzer architecture to operate effectively across diverse software domains.

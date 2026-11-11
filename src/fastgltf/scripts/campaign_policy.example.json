@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "mode": "adaptive_with_saturation",
+  "seed": 20261028,
+  "adaptive_scheduler": {
+    "algorithm": "discounted_ucb",
+    "update_at_epoch_boundary": true,
+    "discount_factor": 0.90,
+    "ucb_exploration_coefficient": 0.75,
+    "family_probability_floor": 0.05,
+    "operator_probability_floor_within_family": 0.02,
+    "initial_family_weights": {
+      "byte": 0.25,
+      "structured_valid": 0.25,
+      "invariant_breaking": 0.40,
+      "procedural": 0.10
+    },
+    "reward_weights": {
+      "corpus_promotion": 1.0,
+      "novel_stage_outcome": 0.5,
+      "novel_oracle_candidate": 2.0,
+      "novel_crash_candidate": 1.0
+    },
+    "reward_normalization": "log1p_per_attempt_and_cost",
+    "max_single_event_reward": 1.0,
+    "ignore_duplicate_known_crash_reward": true,
+    "minimum_attempts_before_trust": 5,
+    "telemetry": {
+      "enabled_in_adaptive_mode": true,
+      "flush_every_executions": 4096,
+      "max_pending_provenance_entries": 100000,
+      "max_epoch_events": 500000,
+      "sample_execution_timing_denominator": 64
+    }
+  },
+  "campaign": {
+    "epoch_seconds": 300,
+    "minimum_runtime_before_saturation_seconds": 1800,
+    "hard_max_runtime_seconds": 7200,
+    "restart_on_fuzzer_exit": true,
+    "count_all_subprocess_executions": true,
+    "preserve_corpus_between_epochs": true,
+    "resume_existing_campaign": true
+  },
+  "saturation": {
+    "enabled": true,
+    "low_yield_epochs_to_suspect_plateau": 3,
+    "minimum_new_corpus_promotions_per_epoch": 1,
+    "minimum_feature_delta_per_epoch": 1,
+    "require_stage_or_oracle_progress_check": true,
+    "recovery_epochs": 1,
+    "recovery_epoch_seconds": 600,
+    "recovery_increase_exploration": true,
+    "recovery_seed_refresh": true,
+    "stop_only_with_complete_telemetry": true,
+    "unresolved_crash_blocks_saturation_stop": true,
+    "reachable_coverage_estimator": {
+      "enabled": false,
+      "role": "advisory_only"
+    },
+    "function_cluster_monitor": {
+      "enabled": false,
+      "role": "optional_extension_requires_reliable_function_coverage"
+    }
+  },
+  "outputs": {
+    "write_epoch_logs": true,
+    "write_policy_snapshot_each_epoch": true,
+    "write_corpus_hash_manifests": true,
+    "write_campaign_summary_json": true,
+    "write_campaign_report_markdown": true,
+    "keep_original_crash_artifacts": true
+  }
+}
+

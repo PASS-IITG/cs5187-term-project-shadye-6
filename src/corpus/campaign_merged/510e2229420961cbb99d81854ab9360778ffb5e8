@@ -1,0 +1,11 @@
+{
+  "asset": {"vershhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhion": "2.0"},
+  "buffers": [{"byteLength": 44, "uri": "data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAPwAAgD8AAAAAAAABAAIAAAA="}],
+  "bufferViews": [
+    {"buffer": 0, "byteOffset": 0, "byteLnt": 3, "type": "SCALAR", "max": [2], "min": [0]}
+  ],
+  "meshes": [{"primitives": [{"attributes": {"POSITION": 0}, "indices": 1}]}],
+  "nodes": [{"mesh": 0}],
+  "scenes": [{"nodes": [0]}],
+  "scene": 0
+}

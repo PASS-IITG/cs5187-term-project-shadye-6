@@ -1,0 +1,95 @@
+From 9b774a9330362dc885672db39bcd96734b9ee59a Mon Sep 17 00:00:00 2001
+From: shadye-6 <dxkshin66@gmail.com>
+Date: Sat, 31 Oct 2026 21:36:10 +0000
+Subject: [PATCH] Fix out-of-bounds iterator dereference in
+ HttpFileImpl::save() (#2655)
+
+Use 4-iterator std::mismatch instead of 3-iterator std::equal when validating destination upload paths. Under ISO C++17 [alg.equal], 3-iterator std::equal assumes the second range has at least as many elements as the first. When an untrusted multipart filename resolves to an ancestor path with fewer components than the upload directory (e.g. .. or ../../c), std::equal dereferenced past-the-end iterators, causing SIGABRT under _GLIBCXX_ASSERTIONS.
+
+Also add unit test cases to HttpFileTest covering strict prefix traversal, dot-dot traversal, and legitimate nested subdirectory uploads.
+
+Fixes #2655
+---
+ lib/src/HttpFileImpl.cc             |  8 +++--
+ lib/tests/unittests/HttpFileTest.cc | 48 +++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+), 3 deletions(-)
+
+diff --git a/lib/src/HttpFileImpl.cc b/lib/src/HttpFileImpl.cc
+index 57323ca3..83a3144b 100644
+--- a/lib/src/HttpFileImpl.cc
++++ b/lib/src/HttpFileImpl.cc
+@@ -68,9 +68,11 @@ int HttpFileImpl::save(const std::string &path) const noexcept
+     std::filesystem::path fsSaveToPath(std::filesystem::weakly_canonical(
+         fsUploadDir / utils::toNativePath(fileName_)));
+     LOG_TRACE << "save to path:" << fsSaveToPath;
+-    if (!std::equal(fsUploadDir.begin(),
+-                    fsUploadDir.end(),
+-                    fsSaveToPath.begin()))
++    auto mismatch = std::mismatch(fsUploadDir.begin(),
++                                  fsUploadDir.end(),
++                                  fsSaveToPath.begin(),
++                                  fsSaveToPath.end());
++    if (mismatch.first != fsUploadDir.end())
+     {
+         LOG_ERROR
+             << "Attempt writing outside of upload directory detected. Path: "
+diff --git a/lib/tests/unittests/HttpFileTest.cc b/lib/tests/unittests/HttpFileTest.cc
+index 5805a6ad..e1b25d56 100644
+--- a/lib/tests/unittests/HttpFileTest.cc
++++ b/lib/tests/unittests/HttpFileTest.cc
+@@ -79,4 +79,52 @@ DROGON_TEST(HttpFile)
+         filesystem::remove_all("test_uploads_dir");
+         filesystem::remove(fileName.string());
+     }
++
++    SUBSECTION(FileNameWithStrictPrefixTraversal)
++    {
++        // Upload path with multiple subdirectories so that destination is a
++        // strict ancestor, making fsSaveToPath have fewer components while
++        // matching all initial components of fsUploadDir.
++        auto uploadPath = filesystem::current_path() / "test_uploads_dir" /
++                          "a" / "b" / "c" / "upload";
++
++        HttpFileImpl file;
++        file.setFileName("../../c");
++        file.setFile("test", 4);
++        auto out = file.save(uploadPath.string());
++
++        CHECK(out == -1);
++
++        filesystem::remove_all(filesystem::current_path() / "test_uploads_dir");
++    }
++
++    SUBSECTION(FileNameWithDotDotTraversal)
++    {
++        auto uploadPath = filesystem::current_path() / "test_uploads_dir";
++
++        HttpFileImpl file;
++        file.setFileName("..");
++        file.setFile("test", 4);
++        auto out = file.save(uploadPath.string());
++
++        CHECK(out == -1);
++
++        filesystem::remove_all(uploadPath);
++    }
++
++    SUBSECTION(FileNameWithNestedSubdirectory)
++    {
++        auto uploadPath = filesystem::current_path() / "test_uploads_dir";
++        filesystem::create_directories(uploadPath / "nested");
++
++        HttpFileImpl file;
++        file.setFileName("nested/test_nested_file");
++        file.setFile("test", 4);
++        auto out = file.save(uploadPath.string());
++
++        CHECK(out == 0);
++        CHECK(filesystem::exists(uploadPath / "nested" / "test_nested_file"));
++
++        filesystem::remove_all(uploadPath);
++    }
+ }
+-- 
+2.53.0.windows.2
+

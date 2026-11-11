@@ -1,0 +1,280 @@
+From 533428736fa450eec57879ab82e123523a0de3d8 Mon Sep 17 00:00:00 2001
+From: shadye-6 <dxkshin66@gmail.com>
+Date: Mon, 2 Nov 2026 19:54:00 +0530
+Subject: [PATCH] fix(httpfile): handle filesystem errors safely in noexcept
+ save methods (#2661)
+
+HttpFileImpl::save() and HttpFileImpl::saveAs() are declared noexcept,
+but previously invoked throwing std::filesystem functions (current_path,
+weakly_canonical, exists) without passing std::error_code.
+
+When a request-controlled filename contains an overly long component
+(exceeding NAME_MAX) or when filesystem queries fail due to permissions
+or inaccessible paths, std::filesystem_error is thrown. Because these methods
+are noexcept, the uncaught exception causes immediate std::terminate(),
+which can result in process termination in applications that expose multipart
+uploads and call HttpFile::save() or HttpFile::saveAs() on request-controlled
+paths without validating them.
+
+Fixes #2661.
+
+This fix:
+1. Replaces the throwing filesystem overloads of current_path, weakly_canonical
+   and exists with error-code overloads. Also makes filesystem error handling
+   consistent across the existing create_directories calls.
+2. Separates filesystem query failures from directory existence checks so
+   query errors are handled safely instead of attempting directory creation.
+3. Returns -1 with descriptive error logging on any filesystem failure.
+4. Adds HttpFileExceptionSafety unit tests in HttpFileTest.cc covering
+   NAME_MAX exceeding filenames, saveAs invalid parent paths, relative
+   current_path resolution, and file-as-directory error conditions.
+---
+ lib/src/HttpFileImpl.cc             |  65 +++++++++++----
+ lib/tests/unittests/HttpFileTest.cc | 123 ++++++++++++++++++++++++++++
+ 2 files changed, 172 insertions(+), 16 deletions(-)
+
+diff --git a/lib/src/HttpFileImpl.cc b/lib/src/HttpFileImpl.cc
+index 34b0faf5..8d901030 100644
+--- a/lib/src/HttpFileImpl.cc
++++ b/lib/src/HttpFileImpl.cc
+@@ -35,6 +35,7 @@ int HttpFileImpl::save(const std::string &path) const noexcept
+         return -1;
+     std::filesystem::path fsUploadDir(utils::toNativePath(path));
+ 
++    std::error_code ec;
+     if (fsUploadDir.is_absolute())
+     {  // do nothing
+     }
+@@ -48,25 +49,48 @@ int HttpFileImpl::save(const std::string &path) const noexcept
+     }
+     else
+     {
+-        fsUploadDir = std::filesystem::current_path() / fsUploadDir;
++        auto curPath = std::filesystem::current_path(ec);
++        if (ec)
++        {
++            LOG_ERROR << "Failed to get current path: " << ec.message();
++            return -1;
++        }
++        fsUploadDir = curPath / fsUploadDir;
+     }
+ 
+-    fsUploadDir = std::filesystem::weakly_canonical(fsUploadDir);
++    fsUploadDir = std::filesystem::weakly_canonical(fsUploadDir, ec);
++    if (ec)
++    {
++        LOG_ERROR << "Failed to canonicalize upload directory: "
++                  << ec.message();
++        return -1;
++    }
+ 
+-    if (!std::filesystem::exists(fsUploadDir))
++    const bool directoryExists = std::filesystem::exists(fsUploadDir, ec);
++    if (ec)
++    {
++        LOG_ERROR << "Failed to check upload directory: " << ec.message();
++        return -1;
++    }
++
++    if (!directoryExists)
+     {
+         LOG_TRACE << "create path:" << fsUploadDir;
+-        std::error_code err;
+-        std::filesystem::create_directories(fsUploadDir, err);
+-        if (err)
++        std::filesystem::create_directories(fsUploadDir, ec);
++        if (ec)
+         {
+-            LOG_SYSERR;
++            LOG_ERROR << "Failed to create upload directory: " << ec.message();
+             return -1;
+         }
+     }
+ 
+-    std::filesystem::path fsSaveToPath(std::filesystem::weakly_canonical(
+-        fsUploadDir / utils::toNativePath(fileName_)));
++    std::filesystem::path fsSaveToPath = std::filesystem::weakly_canonical(
++        fsUploadDir / utils::toNativePath(fileName_), ec);
++    if (ec)
++    {
++        LOG_ERROR << "Failed to canonicalize save path: " << ec.message();
++        return -1;
++    }
+     LOG_TRACE << "save to path:" << fsSaveToPath;
+     // fsSaveToPath can be shorter than fsUploadDir (e.g. a file name of ".."),
+     // so bound both ranges and require fsUploadDir to be a prefix.
+@@ -97,17 +121,26 @@ int HttpFileImpl::saveAs(const std::string &fileName) const noexcept
+             HttpAppFrameworkImpl::instance().getUploadPath()));
+         fsFileName = fsUploadPath / fsFileName;
+     }
+-    if (fsFileName.has_parent_path() &&
+-        !std::filesystem::exists(fsFileName.parent_path()))
++    if (fsFileName.has_parent_path())
+     {
+-        LOG_TRACE << "create path:" << fsFileName.parent_path();
+-        std::error_code err;
+-        std::filesystem::create_directories(fsFileName.parent_path(), err);
+-        if (err)
++        std::error_code ec;
++        const bool parentExists =
++            std::filesystem::exists(fsFileName.parent_path(), ec);
++        if (ec)
+         {
+-            LOG_SYSERR;
++            LOG_ERROR << "Failed to check parent directory: " << ec.message();
+             return -1;
+         }
++        if (!parentExists)
++        {
++            LOG_TRACE << "create path:" << fsFileName.parent_path();
++            std::filesystem::create_directories(fsFileName.parent_path(), ec);
++            if (ec)
++            {
++                LOG_ERROR << "Failed to create directory: " << ec.message();
++                return -1;
++            }
++        }
+     }
+     return saveTo(fsFileName);
+ }
+diff --git a/lib/tests/unittests/HttpFileTest.cc b/lib/tests/unittests/HttpFileTest.cc
+index 7bd46579..e512071f 100644
+--- a/lib/tests/unittests/HttpFileTest.cc
++++ b/lib/tests/unittests/HttpFileTest.cc
+@@ -1,6 +1,10 @@
+ #include "../../lib/src/HttpFileImpl.h"
+ #include <drogon/drogon_test.h>
++#include <drogon/HttpAppFramework.h>
+ #include <filesystem>
++#if !defined(_WIN32)
++#include <unistd.h>
++#endif
+ 
+ using namespace drogon;
+ using namespace std;
+@@ -95,3 +99,122 @@ DROGON_TEST(HttpFileSaveRejectsParentDirectoryName)
+     }
+     filesystem::remove_all(uploadPath);
+ }
++
++static size_t getPathComponentLimit(const filesystem::path &path)
++{
++#if defined(_PC_NAME_MAX) && !defined(_WIN32)
++    long limit = ::pathconf(path.string().c_str(), _PC_NAME_MAX);
++    if (limit > 0)
++        return static_cast<size_t>(limit);
++#endif
++#if defined(NAME_MAX)
++    return NAME_MAX;
++#else
++    return 255;
++#endif
++}
++
++DROGON_TEST(HttpFileExceptionSafety)
++{
++    auto uploadPath = filesystem::current_path() / "test_uploads_dir";
++    const size_t nameLimit = getPathComponentLimit(filesystem::current_path());
++
++    SUBSECTION(FilenameExceedingNameMax)
++    {
++        // Filename exceeding filesystem NAME_MAX (typically 255 bytes).
++        // weakly_canonical() must not throw std::filesystem_error or terminate
++        // the process.
++        std::string longFileName(nameLimit + 50, 'x');
++        HttpFileImpl file;
++        file.setFileName(longFileName);
++        file.setFile("test", 4);
++        CHECK(file.save(uploadPath.string()) == -1);
++    }
++
++    SUBSECTION(SaveAsWithExcessiveParentDirectory)
++    {
++        // Excessive component in parent_path exercises exists(parent, ec)
++        std::string longDirName(nameLimit + 50, 'y');
++        HttpFileImpl file;
++        file.setFileName("normal.txt");
++        file.setFile("test", 4);
++        const auto target = uploadPath / longDirName / "upload.bin";
++        CHECK(file.saveAs(target.string()) == -1);
++    }
++
++    SUBSECTION(SavePathWithNormalRelativePath)
++    {
++        // Normal relative paths (not starting with "." or "..") must resolve
++        // against the configured upload directory (app().getUploadPath()).
++        struct UploadPathGuard
++        {
++            std::string originalPath_{drogon::app().getUploadPath()};
++
++            ~UploadPathGuard()
++            {
++                drogon::app().setUploadPath(originalPath_);
++            }
++        } guard;
++
++        auto customUploadDir =
++            filesystem::current_path() / "test_custom_uploads";
++        filesystem::create_directories(customUploadDir);
++        drogon::app().setUploadPath(customUploadDir.string());
++
++        HttpFileImpl file;
++        file.setFileName("normal_rel.txt");
++        file.setFile("test", 4);
++        int res = file.save("custom_sub");
++        CHECK(res == 0);
++        auto expectedPath = customUploadDir / "custom_sub" / "normal_rel.txt";
++        CHECK(filesystem::exists(expectedPath));
++
++        filesystem::remove_all(customUploadDir);
++    }
++
++    SUBSECTION(RelativePathCurrentPathBranch)
++    {
++        // Path beginning with "." or ".." takes the current_path() branch
++        HttpFileImpl file;
++        file.setFileName("test_rel.txt");
++        file.setFile("test", 4);
++        int res = file.save("./test_uploads_dir/rel_subdir");
++        CHECK(res == 0);
++        CHECK(filesystem::exists(uploadPath / "rel_subdir" / "test_rel.txt"));
++        filesystem::remove_all(uploadPath);
++    }
++
++    SUBSECTION(SaveAsInaccessibleParentDirectory)
++    {
++        // Uses a destination whose parent path traverses through an existing
++        // regular file. Verifies that the resulting ENOTDIR filesystem error is
++        // handled gracefully and saveAs() returns -1.
++        HttpFileImpl file;
++        file.setFileName("test.txt");
++        file.setFile("test", 4);
++        auto blocker = filesystem::current_path() / "test_blocker_file.tmp";
++        {
++            std::ofstream f(blocker);
++            f.put('x');
++        }
++        const auto target = blocker / "child" / "upload.bin";
++        int res = file.saveAs(target.string());
++        CHECK(res == -1);
++        filesystem::remove(blocker);
++    }
++
++    SUBSECTION(UploadPathIsRegularFile)
++    {
++        // Passing an existing regular file as upload directory fails gracefully
++        auto dummyFile = filesystem::current_path() / "test_file_dir.tmp";
++        {
++            std::ofstream f(dummyFile);
++            f << "dummy";
++        }
++        HttpFileImpl file;
++        file.setFileName("out.txt");
++        file.setFile("test", 4);
++        CHECK(file.save(dummyFile.string()) == -1);
++        filesystem::remove(dummyFile);
++    }
++}
+-- 
+2.43.0
+
