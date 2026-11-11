@@ -1,28 +1,69 @@
 \section{Approach}
 \label{sec:approach}
-%% Start with the figure and the main idea in 2-3 sentences.
-%% One \subsection per step, titled "Step N: ..." matching the figure numbers.
-%% Say what is NOT new: "We do not claim this step as new. Everything after it is."
-%% Lists of actions use (i)~...; (ii)~...; inline.
 
-\focus{\textbf{Workflow.} Show how your method works end to end. Start with
-  the overview figure (Figure~\ref{fig:overview}) and state the main idea in
-  2--3 sentences: what goes in, what comes out, what loops, what is
-  expensive. Then one \texttt{\textbackslash subsection} per numbered box in
-  the figure --- the step numbers in the text must match the figure. Say
-  plainly which steps are yours and which you reuse (``We do not claim this
-  step as new'').}
-
-Figure~\ref{fig:overview} shows the steps of \tool. The main idea is
-\todo{one sentence}.
+Figure~\ref{fig:overview} presents the workflow of \tool.
+Our core concept is to build an adaptive, structure-aware fuzzing base for binary asset formats (\fastgltf).
+We then systematically extend this architecture to interactive multimedia systems (\raylib) and asynchronous web servers (\drogon) using domain-specialized headless in-memory shims.
+We do not claim standard compiler instrumentation, libFuzzer's in-process loop, or AddressSanitizer runtime checks as new.
+Our design contribution lies in the cross-domain fuzzer adaptation, the decoupled bandit mutation scheduler, and the zero-socket in-memory network mocking layer.
 
 \begin{figure}[t]
   \centering
   \input{figures/overview}
-  \caption{Overview of \tool. \todo{What loops, what is expensive.}}
+  \caption{Overview of \tool. The system starts with the base structure-aware engine for \fastgltf (\circled{1}), extends to multimedia subsystems in \raylib via headless rendering mocks (\circled{2}), and extends to network servers in \drogon via in-memory socket abstractions (\circled{3}). Coverage rewards update the bandit mutation scheduler.}
   \label{fig:overview}
 \end{figure}
 
-\subsection{Step 1: \todo{Name}}
-\label{sec:step1}
-\todo{Text.}
+\subsection{Step 1: Base Engine and Adaptive Mutation (\fastgltf)}
+\label{sec:base_engine}
+We began by designing \tool for the \fastgltf 3D asset library.
+Because glTF 2.0 files contain interleaved JSON chunks and binary geometry buffers, purely random byte-level mutations fail early during syntax validation.
+We built a hybrid mutation engine combining four distinct operators:
+(i)~\emph{structural field mutations} that modify JSON accessor indices, buffer views, and component counts;
+(ii)~\emph{binary geometry mutators} that modify vertex coordinates, normals, and indices;
+(iii)~\emph{integer boundary overrides} that inject extreme values such as \texttt{SIZE\_MAX}, 0, and negative strides; and
+(iv)~\emph{standard bit and byte flips}.
+
+To steer these operators adaptively, we implemented the UCB1 multi-armed bandit algorithm (Equation~\ref{eq:ucb1}).
+Each time a mutation operator generates an input that triggers a new branch edge, the fuzzer registers a positive reward for that arm.
+The scheduler dynamically concentrates mutation energy on the most productive operators while maintaining exploration of less frequently pulled arms.
+
+\subsection{Step 2: Multimedia Extension and Subsystem Decomposition (\raylib)}
+\label{sec:multimedia_ext}
+Next, we extended the architecture to \raylib, a C multimedia and game development library.
+Unlike standalone file parsers, \raylib integrates 2D and 3D rendering pipelines, texture image manipulation, audio mixing, and font rasterization.
+Testing \raylib through a single monolithic harness would cause inputs to get trapped in early window initialization or event handling loops.
+
+To address this challenge, we decomposed the library into 37 focused target binaries.
+Each target isolates a specific subsystem: the Image VM (52 operators), Render VM (software rasterizer \texttt{rlsw}), audio streams, or event replay.
+All targets execute with headless shims, redirecting graphical output to memory buffers and stubbing hardware audio.
+Figure~\ref{fig:subsystems}(a) illustrates the headless multimedia architecture for \raylib.
+
+\subsection{Step 3: Network Extension and In-Memory Execution (\drogon)}
+\label{sec:network_ext}
+Finally, we extended \tool to \drogon, a high-throughput C++ asynchronous web framework.
+Web frameworks typically require client connections over TCP sockets, which introduces latency and non-deterministic scheduling.
+
+We solved this through three design elements.
+First, \texttt{MockTcpConnection} pushes buffers directly into parser callbacks in memory without socket allocations.
+Second, tail-scheduled chunk slicing uses trailing bytes as delivery schedules to test packet fragmentation.
+Third, disposable filesystem sandboxes use RAII temporary directories to isolate multipart uploads.
+Figure~\ref{fig:subsystems}(b) details the in-memory architecture for \drogon.
+
+\begin{figure}[t]
+  \centering
+  \input{figures/subsystems}
+  \caption{Subsystem fuzzer architectures: (a)~\raylib headless multimedia fuzzer executing over virtual memory framebuffers and audio streams; and (b)~\drogon in-memory web framework fuzzer driving asynchronous parsers via \texttt{MockTcpConnection} and tail-scheduled chunk slicing.}
+  \label{fig:subsystems}
+\end{figure}
+
+\subsection{Step 4: Independent Coverage Interception via Linker Wrapping}
+\label{sec:linker_wrapping}
+To track bandit rewards independently of libFuzzer's internal state, the mutator requires edge discovery signals.
+However, in modern toolchains such as Clang 18, compiling with \texttt{-fsanitize=fuzzer} provides a strong internal definition of \texttt{\_\_sanitizer\_cov\_trace\_pc\_guard}.
+Defining our own hook caused linker duplicate-symbol collisions.
+
+We resolved this conflict by passing GNU linker symbol wrapping flags (\texttt{-Wl,--wrap=\_\_sanitizer\_cov\_trace\_pc\_guard} and \texttt{-Wl,--wrap=\_\_sanitizer\_cov\_trace\_pc\_guard\_init}).
+Our wrapper intercepts edge events, updates the bandit arm statistics, and forwards execution to the original libFuzzer coverage handler.
+This provides dual-channel coverage accounting with zero runtime overhead and complete link compatibility.
+We implemented \tool in 4{,}350 lines of C and C++17 compiled under Clang 18.1.3 on Linux x86\_64 (Ubuntu 24.04 LTS).

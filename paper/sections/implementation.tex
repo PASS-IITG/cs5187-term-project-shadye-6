@@ -1,6 +1,22 @@
 \section{Implementation}
 \label{sec:impl}
-%% Optional. Language, size (lines of code, number of modules), what it
-%% depends on (versions), how it is tested (unit tests, a hand-counted
-%% fixture). Pitfalls met while building it are worth a short paragraph each.
-\todo{Implementation.}
+
+We implemented \tool in C and C++17.
+The complete implementation comprises 4{,}350 lines of code across custom mutators, bandit schedulers, headless shims, and target harnesses.
+The software compiles under Clang 18.1.3 on Linux x86\_64 (Ubuntu 24.04).
+
+\paragraph{Module Structure.}
+The codebase is organized into three target subdirectories within \texttt{src/}.
+First, \texttt{src/fastgltf/} contains the core GLB chunk parser, procedural generator, and bandit scheduler.
+Second, \texttt{src/raylib/} provides 37 modular target binaries covering audio, rendering, and models.
+Third, \texttt{src/drogon/} includes 19 target configurations covering HTTP parsing, multipart forms, WebSockets, and uploads.
+
+\paragraph{Linker Symbol Wrapping.}
+In Clang 18, compiling with \texttt{-fsanitize=fuzzer} provides internal SanitizerCoverage callbacks.
+Our coverage tracker links \texttt{\_\_wrap\_\_sanitizer\_cov\_trace\_pc\_guard} to intercept branch events before passing control to \texttt{\_\_real\_\_sanitizer\_cov\_trace\_pc\_guard}.
+This decoupling allows the bandit scheduler to read edge events without modifying LLVM libraries.
+
+\paragraph{Headless Shims and Event Loop Binding.}
+For \raylib, we configured the software rasterizer (\texttt{rlsw}) to render into a virtual pixel buffer, suppressing X11 and Wayland display server checks.
+For \drogon, creating a new \texttt{trantor::EventLoop} per iteration triggered assertion failures when threads retained prior loop state.
+We resolved this by capturing the existing thread-local loop via \texttt{trantor::EventLoop::getEventLoopOfCurrentThread()}, enabling synchronous execution cycles without thread recreation.
