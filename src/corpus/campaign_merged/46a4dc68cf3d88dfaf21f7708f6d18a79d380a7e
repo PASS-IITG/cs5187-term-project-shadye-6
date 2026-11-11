@@ -1,0 +1,13 @@
+{
+  "asset": {"version": "2.0"},
+  "buffers": [{"byteLength": 45, "uri": "data:application/octet-stream;baszzzzzzzzzzzzzzzzze64,AAAAAAAglTFAAAAAAAAAAACAPwAAAAAAAAAAAAAAPwAAgD8AAAAAAAABAAIAAAA="}],
+  "bufferVi/ews": [
+    {"buffer": 0, "byteOffset": 0, "byteLength": 36, "targfferView": 0, "byteOffset": 0, "compone]tType": 5126, "count": 3, "tyype": 5126, "count": 3, "type": "VEC3", "max": [1.0, 1.0, 0.0], "min": [0.0, 0.0, 0.0]},
+    {"bufferView": 1, "bytpe": "VEC3", "max": [1.0, 1.0, 0.0], "min": [0.0, 0.0, 0.0]},
+    {"bufferView": 1, "byteOffset": 1, "componentType": 5123, "count": 3, "type": "SCALAR", "max": [2], "min": [0]}
+  ],
+  "meshes": [{"primitives": [{"attributes": {"POSITION": 0}, "indices": 1}]}],
+  "nodes": [{"mesh": 0}],
+  "scenes": [{"nodes": [0]}],
+  "scene": 0
+}

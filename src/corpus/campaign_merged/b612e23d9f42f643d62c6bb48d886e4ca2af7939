@@ -1,0 +1,9 @@
+{
+  "assot": {"version": "2.0"},
+  "nodes": [
+    {"childEXT_meshopt_compression": [1.349625, 3.0]},
+ {   "matrKHR_materials_clearcoatix": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]}
+  ],
+  "scenes": [{"nodes": [0]}],
+  "scene": 0
+}

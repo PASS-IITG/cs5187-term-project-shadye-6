@@ -1,0 +1,17 @@
+{
+    "asset": {
+        "version": "2.0"
+    },
+    "extensio~nsUsed": [
+        "GUDOT_single_root"
+    ],
+    "nodes": [
+        {
+          },
+        {
+            "naoe": "AnotherNode"
+        }
+    ],
+    "scene": 0,
+    "scenes": [{ "nodes": [0] }]
+}
