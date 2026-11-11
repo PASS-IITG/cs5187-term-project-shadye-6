@@ -8,7 +8,7 @@
 *.fls
 *.fdb_latexmk
 *.synctex.gz
-main.pdf
+!paper/main.pdf
 
 # Fuzzer, compiler, and temporary working directories
 out/

@@ -7,5 +7,5 @@
 *.fls
 *.fdb_latexmk
 *.synctex.gz
-main.pdf
+!main.pdf
 .DS_Store

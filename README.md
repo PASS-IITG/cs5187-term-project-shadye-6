@@ -7,12 +7,13 @@
 [![Sanitizers: ASan + UBSan](https://img.shields.io/badge/sanitizers-ASan_+_UBSan-red.svg)](https://llvm.org/docs/AddressSanitizer.html)
 [![Executions: 807M+](https://img.shields.io/badge/executions-807M+_across_59_targets-brightgreen.svg)](#)
 [![Vulnerabilities: 16 Discovered](https://img.shields.io/badge/vulnerabilities-16_discovered_(6_upstream)-critical.svg)](#security-vulnerabilities--discovered-defects)
-[![Paper: ACM FSE acmsmall](https://img.shields.io/badge/paper-ACM_acmsmall_(12_pages)-blueviolet.svg)](paper/)
+[![Paper: ACM FSE acmsmall](https://img.shields.io/badge/paper-ACM_acmsmall_(12_pages)-blueviolet.svg)](paper/main.pdf)
 
 > **Authors:** Dakshin, Neel, Samyak  
 > **Department of Computer Science and Engineering, Indian Institute of Technology Guwahati**  
 > **Paper Title:** *Cross-Domain Fuzzing Through Structure-Aware Mutation and Bandit-Guided Adaptation*  
-> **Target Frameworks:** `fastgltf` (3D Parser), `raylib` (Multimedia Engine), `drogon` (Async Web Server)
+> **Target Frameworks:** `fastgltf` (3D Parser), `raylib` (Multimedia Engine), `drogon` (Async Web Server)  
+> **Research Paper (PDF):** 📄 **[`paper/main.pdf`](paper/main.pdf)** (12-page ACM FSE formatted PDF)
 
 ---
 

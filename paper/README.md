@@ -6,6 +6,7 @@ This directory contains the complete LaTeX source code, figures, tables, bibliog
 > **Authors:** Dakshin, Neel, Samyak (Indian Institute of Technology Guwahati)  
 > **Target Venue:** ACM International Conference on Foundations of Software Engineering (FSE) / ACM Small Format  
 > **Course:** CS-5187 Advanced Software Engineering Term Project  
+> **Compiled PDF:** 📄 **[View / Download `main.pdf`](main.pdf)** (12-page ACM single-column format)  
 
 ---
 
@@ -79,3 +80,4 @@ Run `bash scripts/check.sh` to enforce all conference and course constraints:
 ```bash
 bash scripts/check.sh
 ```
+
