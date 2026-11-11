@@ -2,10 +2,10 @@
 
 This bundle contains all unsubmitted/pending security vulnerabilities, heap overflows, out-of-bounds reads, and integer underflows uncovered across the raylib fuzzing campaigns, complete with their minimal reproducer files, AddressSanitizer/UBSan crash traces, analysis, and recommended patches.
 
-## Exclusions (Per Request)
-The following issues have already been submitted upstream as GitHub Pull Requests and are **excluded** from this bundle:
-1. **rlgl Matrix Stack Underflow** (`rlMatrixMode` / `rlPopMatrix` in `src/external/rlsw.h` & `src/rlgl.h`) &rarr; **Pull Request #6362** (Open on `raysan5/raylib:master`).
-2. **Audio Wave NULL Dereference** (`LoadWaveSamples()` missing `RL_MALLOC()` check in `src/raudio.c`) &rarr; **Pull Request #6374** (Closes Issue #6373 on `raysan5/raylib:master`).
+## Upstream Reported & Resolved Issues
+1. **rlgl Matrix Stack Underflow** (`rlMatrixMode` / `rlPopMatrix` in `src/external/rlsw.h` & `src/rlgl.h`) &rarr; **Pull Request [#6362](https://github.com/raysan5/raylib/pull/6362) (Acknowledged, merged upstream)** for Issue [#6361](https://github.com/raysan5/raylib/issues/6361).
+2. **Out-of-Bounds Read in `ExportAutomationEventList()`** (`src/rcore.c`) &rarr; **Issue [#6378](https://github.com/raysan5/raylib/issues/6378) (Acknowledged, fixed by maintainer)**.
+3. **Audio Wave NULL Dereference** (`LoadWaveSamples()` in `src/raudio.c`) &rarr; **Issue [#6373](https://github.com/raysan5/raylib/issues/6373) (Acknowledged, maintainer fixed alternatively in commit [7639166](https://github.com/raysan5/raylib/commit/7639166019f6d300435a2610726150558f745bee))**.
 
 *(Note: Issue 06 below is a separate audio mixer buffer NULL dereference in `ReadAudioBufferFramesInInternalFormat()` device playback callback, which is unsubmitted).*
 

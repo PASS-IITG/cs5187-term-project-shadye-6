@@ -8,8 +8,8 @@ This bundle contains complete documentation, raw fuzz trigger payloads, standalo
 
 | Issue ID | Defect Class | CWE | Severity | Affected Component | Trigger / Artifact | Status |
 | :--- | :--- | :---: | :---: | :--- | :--- | :---: |
-| **Issue 01** | Out-of-Bounds Iterator Dereference | CWE-125 | **High** | `HttpFileImpl::save()` | `reproducer_prefix_traversal.bin` (`../../c`) | Fixed in PR #2656 (merged upstream PR #2659) |
-| **Issue 02** | Uncaught Exception in `noexcept` (Application DoS) | CWE-755 / CWE-248 | **High** | `HttpFileImpl::save()` & `saveAs()` | `crash-65e67953a3b9503f...` (filename > 255 B) | PR [#2662](https://github.com/drogonframework/drogon/pull/2662) (Fixes [#2661](https://github.com/drogonframework/drogon/issues/2661)) |
+| **Issue 01** | Out-of-Bounds Iterator Dereference | CWE-125 | **High** | `HttpFileImpl::save()` | `reproducer_prefix_traversal.bin` (`../../c`) | Closed; issue raised, fixed by maintainer in PR [#2656](https://github.com/drogonframework/drogon/pull/2656) |
+| **Issue 02** | Uncaught Exception in `noexcept` (Application DoS) | CWE-755 / CWE-248 | **High** | `HttpFileImpl::save()` & `saveAs()` | `crash-65e67953a3b9503f...` (filename > 255 B) | Closed; PR [#2662](https://github.com/drogonframework/drogon/pull/2662) merged upstream (Fixes [#2661](https://github.com/drogonframework/drogon/issues/2661)) |
 | **Issue 03** | Undefined Behavior / Out-of-Range Enum | CWE-843 | **Medium** | `HttpResponseParser.cc` & `HttpTypes.h` | `crash-6cb7836dc05ed7...` (status code 20020/707) | Patch provided (`0003-...patch`) |
 | **Issue 04** | Multipart Boundary Semantic Desync | RFC 2046 | **Medium** | `MultiPart.cc` vs `MultipartStreamParser.cc` | `crash-475fce340a...` / `crash-42712dc...` | Discovered via differential fuzzer |
 | **Issue 05** | Malformed Header Line Premature Termination | CWE-444 | **High** | `HttpRequestParser.cc` (upstream regression) | `BadHeaderNoColon\r\n` | Patch provided (`0005-...patch`) |

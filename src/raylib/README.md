@@ -1,9 +1,18 @@
-# raylib-fuzz — architecture, strategy and implementation
+# QTFuzz: raylib Subsystem (Phase 2 Multimedia Extension) (`src/raylib/`)
 
 Target: `raysan5/raylib` @ `3b12ba1` (2026-11-02). 37 libFuzzer/AFL++ harnesses covering every
 untrusted-input surface: 15 image decoders, 7 audio codecs, 4 font formats, 6 model formats, an
 image-processing VM, a render VM over the software rasterizer, text/UTF-8, compression/encoding,
 and automation-event replay.
+
+Part of **QTFuzz** (Cross-Domain Fuzzing Through Structure-Aware Mutation and Bandit-Guided Adaptation).
+
+---
+
+### Verified Upstream Vulnerabilities Fixed:
+- **R1:** Matrix stack underflow in `swPopMatrix()` (`rlsw.h`, CWE-119) &rarr; **Acknowledged, PR #6362 merged** (Issue [#6361](https://github.com/raysan5/raylib/issues/6361)).
+- **R2:** Out-of-bounds heap read in `ExportAutomationEventList()` (`rcore.c`, CWE-125) &rarr; **Acknowledged, maintainer fixed** (Issue [#6378](https://github.com/raysan5/raylib/issues/6378)).
+- **R3:** NULL-pointer dereference in `LoadWaveSamples()` (`raudio.c`, CWE-476) &rarr; **Acknowledged, maintainer fixed** in commit [7639166](https://github.com/raysan5/raylib/commit/7639166019f6d300435a2610726150558f745bee) (Issue [#6373](https://github.com/raysan5/raylib/issues/6373)).
 
 ```
 ./build.sh libfuzzer            # ASan+UBSan+libFuzzer  -> out/libfuzzer/

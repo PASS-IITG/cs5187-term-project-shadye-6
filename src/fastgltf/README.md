@@ -1,6 +1,6 @@
-# fastgltf Structure-Aware & Adaptive Hybrid Fuzzing Project (`src/`)
+# QTFuzz: fastgltf Subsystem (Phase 1 Base Engine) (`src/fastgltf/`)
 
-This directory contains the complete source code, mutation engines, safety oracles, fuzzing harnesses, adaptive schedulers, saturation monitors, automation scripts, raw experimental evaluation data, and vulnerability reproducers for the **fastgltf** fuzzing term project.
+This directory contains the complete source code, mutation engines, safety oracles, fuzzing harnesses, adaptive schedulers, saturation monitors, automation scripts, raw experimental evaluation data, and vulnerability reproducers for the **fastgltf** subsystem of **QTFuzz**.
 
 ---
 
