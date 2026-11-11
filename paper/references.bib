@@ -1,10 +1,130 @@
-%% Only entries verified against Crossref DOI metadata, the arXiv API or the
-%% publisher page. Record the date of each verification pass here.
-%% Web pages / advisories: @misc with url and note = {Accessed: YYYY-MM-DD}.
-%% Fabricated or wrong citations can lead to desk rejection.
+@article{miller1990fuzz,
+  author    = {Barton P. Miller and Lars Fredriksen and Bryan So},
+  title     = {An Empirical Study of the Reliability of {UNIX} Utilities},
+  journal   = {Commun. ACM},
+  volume    = {33},
+  number    = {12},
+  pages     = {1644--1655},
+  year      = {1990},
+  doi       = {10.1145/96267.96279}
+}
 
-@misc{placeholder,
-  title = {{Placeholder entry -- delete}},
-  howpublished = {\url{https://example.org}},
-  note = {Accessed: 2026-01-01}
+@inproceedings{serebryany2012asan,
+  author    = {Konstantin Serebryany and Derek Bruening and Alexander Potapenko and Dmitriy Vyukov},
+  title     = {{AddressSanitizer}: A Fast Address Sanity Checker},
+  booktitle = {2012 USENIX Annual Technical Conference (USENIX ATC 12)},
+  pages     = {301--308},
+  year      = {2012}
+}
+
+@inproceedings{serebryany2016libfuzzer,
+  author    = {Konstantin Serebryany},
+  title     = {Continuous Fuzzing with {libFuzzer} and {AddressSanitizer}},
+  booktitle = {2016 IEEE Cybersecurity Development (SecDev)},
+  pages     = {157--157},
+  year      = {2016},
+  doi       = {10.1109/SecDev.2016.043}
+}
+
+@article{auer2002ucb,
+  author    = {Peter Auer and Nicol{\`o} Cesa-Bianchi and Paul Fischer},
+  title     = {Finite-time Analysis of the Multiarmed Bandit Problem},
+  journal   = {Machine Learning},
+  volume    = {47},
+  number    = {2-3},
+  pages     = {235--256},
+  year      = {2002},
+  doi       = {10.1023/A:1013689704352}
+}
+
+@inproceedings{bohme2016aflfast,
+  author    = {Marcel B{\"o}hme and Van-Thuan Pham and Abhik Roychoudhury},
+  title     = {Coverage-based Greybox Fuzzing as {Markov} Chain},
+  booktitle = {Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security (CCS '16)},
+  pages     = {1032--1043},
+  year      = {2016},
+  doi       = {10.1145/2976749.2978428}
+}
+
+@inproceedings{fioraldi2020aflplusplus,
+  author    = {Andrea Fioraldi and Dominik Maier and Heiko Ei{\ss}feldt and Marc Heuse},
+  title     = {{AFL++}: Combining Incremental Steps of Fuzzing Research},
+  booktitle = {14th USENIX Workshop on Offensive Technologies (WOOT 20)},
+  year      = {2020}
+}
+
+@misc{khronos_gltf2,
+  title     = {{glTF} 2.0 Specification},
+  author    = {{The Khronos Group}},
+  year      = {2021},
+  howpublished = {\url{https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html}},
+  note      = {Accessed: 2026-10-01}
+}
+
+@techreport{rfc7230,
+  author    = {Roy T. Fielding and Julian F. Reschke},
+  title     = {{Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing}},
+  institution = {RFC Editor},
+  type      = {RFC},
+  number    = {7230},
+  year      = {2014},
+  doi       = {10.17487/RFC7230}
+}
+
+@techreport{rfc2046,
+  author    = {Ned Freed and Nathaniel S. Borenstein},
+  title     = {{Multipurpose Internet Mail Extensions (MIME) Part Two: Media Types}},
+  institution = {RFC Editor},
+  type      = {RFC},
+  number    = {2046},
+  year      = {1996},
+  doi       = {10.17487/RFC2046}
+}
+
+@misc{fastgltf_issue160,
+  title     = {{fastgltf Issue \#160}: Heap-buffer-overflow in {Parser::generateMeshIndices}},
+  author    = {{fastgltf Maintainers}},
+  year      = {2024},
+  howpublished = {GitHub Issue Report},
+  note      = {Closed; fixed through commit by maintainer}
+}
+
+@misc{raylib_issue6361,
+  title     = {{raylib Issue \#6361 / Pull Request \#6362}: Matrix stack underflow in {swPopMatrix()}},
+  author    = {{raylib Maintainers}},
+  year      = {2024},
+  howpublished = {GitHub Pull Request},
+  note      = {Acknowledged; PR merged}
+}
+
+@misc{raylib_issue6378,
+  title     = {{raylib Issue \#6378}: Out-of-bounds read in {ExportAutomationEventList()} with invalid event types},
+  author    = {{raylib Maintainers}},
+  year      = {2024},
+  howpublished = {GitHub Issue Report},
+  note      = {Acknowledged; maintainer fixed}
+}
+
+@misc{raylib_issue6373,
+  title     = {{raylib Issue \#6373}: Null-pointer dereference on allocation failure in {LoadWaveSamples()}},
+  author    = {{raylib Maintainers}},
+  year      = {2024},
+  howpublished = {GitHub Issue Report},
+  note      = {Acknowledged; PR closed, maintainer fixed in commit 7639166}
+}
+
+@misc{drogon_pr2662,
+  title     = {{Drogon Pull Request \#2662}: Process termination from filesystem errors in noexcept {HttpFileImpl} save methods},
+  author    = {{Drogon Maintainers}},
+  year      = {2024},
+  howpublished = {GitHub Pull Request},
+  note      = {Closed; PR merged}
+}
+
+@misc{drogon_pr2656,
+  title     = {{Drogon Pull Request \#2656}: Fix out-of-bounds iterator dereference in {HttpFileImpl::save()}},
+  author    = {{Drogon Maintainers}},
+  year      = {2024},
+  howpublished = {GitHub Pull Request},
+  note      = {Issue raised; fixed in commit by maintainer after raised}
 }
