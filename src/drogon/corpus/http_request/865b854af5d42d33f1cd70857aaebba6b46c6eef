@@ -1,0 +1,6 @@
+GET / HTTP/1.1
+Host: loc/echo HTTP/1.1
+Host: localhost
+Content-Length: 1
+
+test

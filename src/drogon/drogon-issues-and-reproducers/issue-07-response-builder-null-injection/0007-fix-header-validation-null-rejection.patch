@@ -1,0 +1,22 @@
+From: Drogon-Fuzz Security Team <security@drogon.org>
+Subject: [PATCH] Enforce RFC 9110 null byte rejection in isValidHeader
+
+---
+ lib/src/HttpUtils.cc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lib/src/HttpUtils.cc b/lib/src/HttpUtils.cc
+index f7a809b..24ae801 100644
+--- a/lib/src/HttpUtils.cc
++++ b/lib/src/HttpUtils.cc
+@@ -871,8 +871,8 @@ bool isValidHeader(const std::string &field, const std::string &value)
+ {
+-    for (char c : field) if (c == '\r' || c == '\n') return false;
+-    for (char c : value) if (c == '\r' || c == '\n') return false;
++    for (char c : field) if (c == '\r' || c == '\n' || c == '\0') return false;
++    for (char c : value) if (c == '\r' || c == '\n' || c == '\0') return false;
+     return true;
+ }
+-- 
+2.43.0
+

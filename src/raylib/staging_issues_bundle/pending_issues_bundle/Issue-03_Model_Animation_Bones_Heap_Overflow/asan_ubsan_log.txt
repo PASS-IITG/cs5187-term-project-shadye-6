@@ -1,0 +1,25 @@
+[Command]
+out/repro/fuzz_model_gltf work/crashes/fuzz_model_gltf/crash-57ad21eeee294bb26a00fce4edde62251ba466e3
+
+[Output]
+[run] /mnt/c/Users/dxksh/Desktop/swa/raylib/work/crashes/fuzz_model_gltf/crash-57ad21eeee294bb26a00fce4edde62251ba466e3 (1506)
+=================================================================
+==10==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x502000000440 at pc 0x6470f98d9605 bp 0x7ffe1151bf10 sp 0x7ffe1151bf08
+READ of size 8 at 0x502000000440 thread T0
+    #0 0x6470f98d9604 in UpdateModelAnimationBones /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:2335:17
+    #1 0x6470f98d9b05 in UpdateModelAnimation /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:2372:9
+    #2 0x6470f9587361 in LLVMFuzzerTestOneInput /mnt/c/Users/dxksh/Desktop/swa/raylib/harness/fuzz_model.c:55:13
+    #3 0x6470f9587ba6 in run /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:19:48
+    #4 0x6470f95878e1 in main /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:21:66
+    #5 0x7b94cba2a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)
+    #6 0x7b94cba2a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)
+    #7 0x6470f94ad614 in _start (/mnt/c/Users/dxksh/Desktop/swa/raylib/out/repro/fuzz_model_gltf+0x121614)
+
+0x502000000440 is located 16 bytes before 8-byte region [0x502000000450,0x502000000458)
+allocated by thread T0 here:
+    #0 in calloc
+    #1 in LoadModelAnimationsGLTF /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:6877:61
+    #2 in LoadModelAnimations /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:2301:63
+    #3 in LLVMFuzzerTestOneInput /mnt/c/Users/dxksh/Desktop/swa/raylib/harness/fuzz_model.c:51:45
+SUMMARY: AddressSanitizer: heap-buffer-overflow /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:2335:17 in UpdateModelAnimationBones
+==10==ABORTING

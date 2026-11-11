@@ -1,0 +1,9 @@
+=================================================================
+==14==ERROR: AddressSanitizer: SEGV on unknown address 0x5020000c0084 (pc 0x588be91b868f bp 0x7ffd3aff99c0 sp 0x7ffd3aff9760 T0)
+==14==The signal is caused by a READ memory access.
+    #0 0x588be91b868f in GetRayCollisionMesh /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rmodels.c:4352:21
+    #1 0x588be8e2e7bc in LLVMFuzzerTestOneInput /mnt/c/Users/dxksh/Desktop/swa/raylib/harness/fuzz_render_vm.c:88:67
+    #2 0x588be8e31866 in run /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:19:48
+    #3 0x588be8e315a1 in main /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:21:66
+
+SUMMARY: AddressSanitizer: SEGV in GetRayCollisionMesh (src/rmodels.c:4352:21)

@@ -1,0 +1,22 @@
+[Command]
+out/repro/fuzz_automation work/crashes/fuzz_automation/crash-00009325e8575b5c8dcc3e62f999ecf1610b93eb
+
+[Output]
+[run] /mnt/c/Users/dxksh/Desktop/swa/raylib/work/crashes/fuzz_automation/crash-00009325e8575b5c8dcc3e62f999ecf1610b93eb (44)
+/mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rcore.c:3758:117: runtime error: index 4294967287 out of bounds for type 'const char *[24]'
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rcore.c:3758:117 
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==10==ERROR: AddressSanitizer: SEGV on unknown address 0x582c1934e8b8 (pc 0x582418f2e142 bp 0x7ffc44087bf0 sp 0x7ffc44087b80 T0)
+==10==The signal is caused by a READ memory access.
+    #0 0x582418f2e142 in ExportAutomationEventList /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rcore.c:3757:22
+    #1 0x582418edbc1d in LLVMFuzzerTestOneInput /mnt/c/Users/dxksh/Desktop/swa/raylib/harness/fuzz_automation.c:38:9
+    #2 0x582418edc076 in run /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:19:48
+    #3 0x582418edbdb1 in main /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:21:66
+    #4 0x775829a2a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9)
+    #5 0x775829a2a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a)
+    #6 0x582418e02624 in _start (/mnt/c/Users/dxksh/Desktop/swa/raylib/out/repro/fuzz_automation+0x121624)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rcore.c:3757:22 in ExportAutomationEventList
+==10==ABORTING

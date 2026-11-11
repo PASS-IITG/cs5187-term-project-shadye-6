@@ -1,0 +1,3 @@
+GET /itml HTTP/1.1
+:Hos
+:Host: eom

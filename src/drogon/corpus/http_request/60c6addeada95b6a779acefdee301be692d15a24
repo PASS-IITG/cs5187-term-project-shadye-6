@@ -1,0 +1,31 @@
+GET / HTTP/1.1
+Hot: lcookieocalhkst
+
+GET /%cha HTTP/1.1
+: lcookieocalhkst
+
+GET /%cha HTTP/1.1
+Host:kieocalhkst
+
+GET /%cha HTTP/1.1
+: lcookieocalhkst
+
+GET /%cha HTTP/1.1
+Host: localhost
+Content-LeHost: localhostP/1.1
+Hot: lcookieocalhkst
+
+GET /%cha HTTP/1.1
+: lcookieocalhk localhost
+Content-LeHost: localhostP/1.1
+Hot: lcookieocalhkst
+
+GET /%cha HTTP/1.1
+: lcookieocalhkst
+
+GET /%cha HTTP/1.1
+
+Host: localho
+Content-Length: 8
+
+test

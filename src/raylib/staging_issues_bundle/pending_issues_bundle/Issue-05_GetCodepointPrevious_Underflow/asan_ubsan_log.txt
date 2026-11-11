@@ -1,0 +1,18 @@
+[Command]
+out/repro/fuzz_text work/crashes/fuzz_text/crash-000379d2a3d452d232f32a3ea40e8d501b686180
+
+[Output]
+[run] /mnt/c/Users/dxksh/Desktop/swa/raylib/work/crashes/fuzz_text/crash-000379d2a3d452d232f32a3ea40e8d501b686180 (359)
+=================================================================
+==53==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x51100000003f at pc 0x56f0fc0a5914 bp 0x7ffe832537f0 sp 0x7ffe832537e8
+READ of size 1 at 0x51100000003f thread T0
+    #0 0x56f0fc0a5913 in GetCodepointPrevious /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rtext.c:2592:21
+    #1 in LLVMFuzzerTestOneInput /mnt/c/Users/dxksh/Desktop/swa/raylib/harness/fuzz_text.c:30:65
+    #2 in run /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:19:48
+    #3 in main /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:21:66
+
+0x51100000003f is located 1 bytes before 213-byte region [0x511000000040,0x511000000115)
+allocated by thread T0 here:
+    #0 in malloc
+SUMMARY: AddressSanitizer: heap-buffer-overflow /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rtext.c:2592:21 in GetCodepointPrevious
+==53==ABORTING

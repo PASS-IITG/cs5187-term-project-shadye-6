@@ -1,407 +1,285 @@
-# fastgltf Structure-Aware & Adaptive Hybrid Fuzzing Project (`src/`)
+# QTFuzz: Cross-Domain Adaptive Fuzzer Codebase (`src/`)
 
-This directory contains the complete source code, mutation engines, safety oracles, fuzzing harnesses, adaptive schedulers, saturation monitors, automation scripts, raw experimental evaluation data, and vulnerability reproducers for the **fastgltf** fuzzing term project.
+This directory contains the complete source code, mutation operators, multi-armed bandit schedulers, headless in-memory shims, subsystem fuzz harnesses, campaign orchestration scripts, seed corpora, and vulnerability reproducers for **QTFuzz**.
 
 ---
 
-## 1. Project Metadata & Pinned Environment
+## 1. Architectural Overview & Evolutionary Flow
 
-All empirical results, coverage measurements, and vulnerability findings were generated using this pinned environment:
+QTFuzz was engineered to address a fundamental challenge in coverage-guided fuzzing: testing heterogeneous, multi-layered C and C++ software stacks without sacrificing execution speed or domain-specific structural intelligence. The project follows a three-phase evolutionary roadmap:
+
+```
+[Phase 1: Base Engine]         [Phase 2: Multimedia Extension]      [Phase 3: Network Extension]
+      fastgltf                              raylib                              drogon
+  (3D Asset Parser)               (Game & Rendering Engine)            (Asynchronous Web Server)
+ ───────────────────────         ───────────────────────────          ───────────────────────────
+ • Structure-aware mutators      • 37 decoupled target harnesses      • In-memory MockTcpConnection
+ • UCB1 bandit scheduler         • Headless software rasterizer       • Tail-scheduled chunk slicing
+ • Binary chunk parsing          • Linker coverage interception       • Temporary upload sandboxing
+ • 3 target harnesses            • 37 target harnesses                • 19 target harnesses
+ • 3.2M campaign inputs          • 54.3M campaign inputs              • 750M campaign inputs
+```
+
+1. **Phase 1: Base Engine (`src/fastgltf/`)**
+   We began by building a structure-aware hybrid fuzzing engine for the `fastgltf` 3D model parsing library. glTF 2.0 assets contain interleaved JSON metadata and binary geometry buffers, causing flat byte mutators to saturate early. We introduced an adaptive multi-armed bandit (Discounted-UCB1) scheduler that balances structured AST mutation, binary geometry modification, integer boundary injection, and byte-level mutations.
+
+2. **Phase 2: Multimedia & Graphics Extension (`src/raylib/`)**
+   We generalized the base mutation and scheduling architecture to interactive multimedia systems using `raylib`. Unlike file parsers, game engines expect display servers, framebuffers, and audio mixing devices. We resolved this through subsystem decomposition ("One Source, Many Binaries"), splitting the engine into 37 isolated target binaries running with headless rendering mocks over the software rasterizer (`rlsw`). To prevent compiler symbol collisions with libFuzzer in Clang 18, we introduced GNU linker symbol wrapping (`-Wl,--wrap=__sanitizer_cov_trace_pc_guard`) for independent coverage reward tracking.
+
+3. **Phase 3: Asynchronous Networking Extension (`src/drogon/`)**
+   Finally, we extended the architecture to high-concurrency web servers using `drogon`. Traditional network fuzzers communicate over operating system loopback sockets, capping execution throughput to hundreds of iterations per second. We bypassed OS network overhead by creating `MockTcpConnection`, an in-memory C++ abstraction capturing the `trantor::TcpConnection` interface and thread-local `EventLoop`. We added tail-scheduled chunk slicing to test packet fragmentation without corrupting seed payloads, achieving over 53,000 executions per second directly in user space.
+
+---
+
+## 2. Pinned Environment & Prerequisites
+
+All target systems, mutation engines, and harnesses compile and execute under the following pinned environment:
 
 | Property | Value |
 | :--- | :--- |
-| **Target Library** | [fastgltf](https://github.com/spnda/fastgltf) |
-| **Pinned Release** | `v0.9.1` |
-| **Git Commit** | `705564d4d54500ae88befb0db9e361e447923655` (clean Git submodule in `external/fastgltf`) |
-| **Target Architecture** | x86_64-pc-linux-gnu |
-| **Operating System** | Linux 6.6 under WSL2 Ubuntu 24.04 LTS (Noble) |
-| **Compiler Suite** | Clang version 18.1.3 (`clang`, `clang++`, `llvm-profdata`, `llvm-cov`) |
-| **C++ Standard** | C++17 (`-std=c++17`) |
-| **Build System** | CMake 3.28.3, Ninja 1.11.1 |
-| **Fuzzing Engine** | LLVM libFuzzer |
-| **Sanitizers** | AddressSanitizer (ASan) + UndefinedBehaviorSanitizer (UBSan) |
+| **Operating System** | Linux x86_64 (Ubuntu 24.04 LTS under WSL2 / Native Linux) |
+| **Compiler Suite** | Clang 18.1.3 (`clang`, `clang++`, `llvm-profdata`, `llvm-cov`) |
+| **C/C++ Standards** | C11 (`-std=c11`), C++17 (`-std=c++17`) |
+| **Build Tools** | CMake 3.28+, Ninja 1.11+, Make |
+| **Sanitizers** | AddressSanitizer (`-fsanitize=address`) & UndefinedBehaviorSanitizer (`-fsanitize=undefined`) |
+| **Fuzzing Engine** | LLVM libFuzzer (`-fsanitize=fuzzer`) |
+| **Linker** | GNU `ld` with symbol wrapping support (`-Wl,--wrap`) |
+| **Python Support** | Python 3.10+ (standard library for monitoring, corpus minimization, and telemetry) |
 
----
-
-## 2. Research Hypothesis & Core Objectives
-
-> **Under constrained fuzzing budgets, does a target-specific, structure-aware mutation engine equipped with a multi-armed bandit (Discounted-UCB) adaptive scheduler outperform static byte-level and fixed hybrid mutation in code coverage, deep parser stage penetration, and critical memory safety vulnerability discovery?**
-
-### The Four Comparative Experimental Arms:
-1. **`fixed` (Baseline):** Static 4-way hybrid schedule with fixed probability weights (25% byte, 25% valid structural, 40% invariant-breaking, 10% procedural) without dynamic adaptation or telemetry overhead.
-2. **`adaptive`:** Dynamic multi-armed bandit scheduler using **Discounted Upper Confidence Bound (Discounted-UCB)** that updates family and sub-operator weights at epoch boundaries based on attributed corpus promotions, novel stage outcomes, and oracle findings.
-3. **`fixed_with_saturation`:** Static 4-way baseline combined with a **6-state conservative saturation monitor** that halts execution or attempts plateau recovery when progress stagnates across multiple independent signals.
-4. **`adaptive_with_saturation`:** Full adaptive architecture pairing the Discounted-UCB mutation scheduler with the conservative saturation monitor and plateau recovery sequence.
-
----
-
-## 3. System Architecture
-
-The architecture decouples container parsing, JSON AST mutation, dynamic operator scheduling, in-memory telemetry attribution, configuration profiling, and downstream accessor traversal into modular layers:
-
-```mermaid
-graph TD
-    subgraph InputGen ["Input Generation and Adaptive Mutation"]
-        LF["libFuzzer Engine"]
-        CM["LLVMFuzzerCustomMutator<br/>fuzz/custom_mutator.cpp"]
-        SCHED["Discounted-UCB Scheduler<br/>fuzz/mutation_scheduler.cpp"]
-        TELEM["Mutation Telemetry and Ledger<br/>fuzz/mutation_telemetry.cpp"]
-        HASH["Shared 64-bit FNV-1a Hash<br/>fuzz/hash_util.hpp"]
-
-        BM["Family: byte (floor: 5%)<br/>ByteLibFuzzer"]
-        SM["Family: structured_valid (floor: 5%)<br/>StructGlbRepair, StructJsonAstRepair"]
-        IM["Family: invariant_breaking (floor: 5%)<br/>StructGlbCorrupt, StructJsonAstCorrupt, Textual"]
-        PG["Family: procedural (floor: 5%)<br/>ProceduralGenerator (gltf_generator.cpp)"]
-    end
-
-    subgraph EnvelopeDispatch ["Input Envelope Dispatch"]
-        RAW["Raw Fuzzer Byte Stream"]
-        ENV["Envelope Parser<br/>splitEnvelope"]
-        OPT["Profile Selector: Profiles 0..7<br/>fastgltf::Options"]
-        PAY["glTF / GLB Payload Buffer"]
-    end
-
-    subgraph TargetLib ["Target Library (fastgltf v0.9.1 upstream)"]
-        LOAD["fastgltf::Parser::loadGltf"]
-        SIMD["simdjson JSON Parser"]
-        B64["Base64 Decoder<br/>AVX2 / Fallback"]
-        URI["URIView Parser"]
-        GMI["Parser::generateMeshIndices"]
-        ASSET["fastgltf::Asset Created"]
-        VAL["fastgltf::validate"]
-    end
-
-    subgraph DeepHarness ["Deep Harness and Safety Oracles"]
-        REC["StageRecorder RAII<br/>STAGE_PARSED, STAGE_VALIDATED, ..."]
-        EX["Asset Exerciser<br/>asset_exerciser.cpp"]
-        GBA["GuardedBufferAdapter<br/>ASan Redzones per BufferView"]
-        REF["ReferenceDecoder<br/>Checked Arithmetic Extent Oracle"]
-        ITER["iterateAccessorWithIndex"]
-        ELEM["getAccessorElement"]
-        COPY["copyFromAccessor"]
-    end
-
-    subgraph CampaignSupervision ["Campaign Manager and Saturation Monitor"]
-        MGR["Campaign Manager<br/>scripts/campaign_manager.py"]
-        MON["Saturation Monitor (6-state)<br/>scripts/saturation_monitor.py"]
-        ACC["Restart-Resilient Execution Accounting<br/>Sums all subprocesses"]
-        MATCH["Unambiguous Promotion Matcher<br/>hash:size against ledger"]
-        POLICY["Policy Snapshot Exporter<br/>policy_epoch_XXX.json"]
-    end
-
-    subgraph TriagePipeline ["Triage and Reproduction"]
-        CRASH["Crash Artifact"]
-        TRI["Triage Engine<br/>scripts/triage.py"]
-        REP["Replay Runner<br/>scripts/replay.sh"]
-        POC1["poc_f011.cpp<br/>Novel Zero-Day PoC"]
-        POC2["poc_base64_oob.cpp<br/>Base64 LUT OOB PoC"]
-    end
-
-    LF --> CM
-    CM --> SCHED
-    SCHED --> BM
-    SCHED --> SM
-    SCHED --> IM
-    SCHED --> PG
-
-    BM --> RAW
-    SM --> RAW
-    IM --> RAW
-    PG --> RAW
-    CM -.->|Record Provenance| TELEM
-    TELEM --- HASH
-
-    RAW --> ENV
-    ENV -->|Byte 0: Profile| OPT
-    ENV -->|Bytes 1..N: Payload| PAY
-
-    OPT --> LOAD
-    PAY --> LOAD
-    LOAD --> SIMD
-    LOAD --> B64
-    LOAD --> URI
-    LOAD -->|Options::GenerateMeshIndices| GMI
-    LOAD --> ASSET
-
-    PAY -.->|Consume Provenance Once| TELEM
-    TELEM --> REC
-    REC --> VAL
-    ASSET --> VAL
-    ASSET --> EX
-    EX --> GBA
-    EX --> REF
-    EX --> ITER
-    EX --> ELEM
-    EX --> COPY
-
-    GMI -->|Memory Violation| CRASH
-    B64 -->|Memory Violation| CRASH
-    URI -->|Memory Violation| CRASH
-    ITER -->|Memory Violation| CRASH
-
-    CRASH --> TRI
-    TRI --> REP
-    CRASH --> POC1
-    CRASH --> POC2
-
-    MGR --> ACC
-    MGR --> MATCH
-    MGR --> MON
-    MATCH -.->|Attributed Promotions| SCHED
-    MON -.->|Exploration Boost / Recovery| SCHED
-    SCHED --> POLICY
+To install build prerequisites on Ubuntu / Debian:
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential clang-18 llvm-18-dev cmake ninja-build \
+                        libjsoncpp-dev libssl-dev zlib1g-dev uuid-dev libasound2-dev libx11-dev
 ```
 
 ---
 
-## 4. Mathematical and Algorithmic Formulation
-
-### 4.1 Mutation Operator Registry
-The mutator catalogs 8 specialized operators organized into 4 families with stable IDs:
-
-| Family | ID | Operator Name | Description | Default Weight | Floor |
-| :--- | :---: | :--- | :--- | :---: | :---: |
-| **`byte`** | 0 | `ByteLibFuzzer` | Baseline `LLVMFuzzerMutate` fallback | 0.25 | 0.05 |
-| **`structured_valid`** | 1 | `StructGlbRepair` | Binary GLB chunk mutation with container length repair | 0.125 | 0.02 |
-| | 2 | `StructJsonAstRepair` | nlohmann::json DOM mutation with buffer length repair | 0.125 | 0.02 |
-| **`invariant_breaking`** | 3 | `StructGlbCorrupt` | GLB header/chunk lengths and chunk alignment corruption | 0.14 | 0.02 |
-| | 4 | `StructJsonAstCorrupt` | Accessor counts, bufferView offsets, and invalid types | 0.20 | 0.02 |
-| | 5 | `StructJsonTextual` | Malformed numbers (`1e9999`), cut syntax, URI injection | 0.06 | 0.02 |
-| **`procedural`** | 6 | `ProceduralGenerator` | Algorithmic synthesis of fresh glTF, GLB, and sparse assets | 0.10 | 0.02 |
-
-### 4.2 Discounted-UCB Weight Adaptation
-At each epoch boundary $e$, historical attempts $N_i$ and rewards $R_i$ are exponentially decayed by discount factor $\gamma \in (0, 1]$ (default $\gamma = 0.90$) to prioritize recent operational yield:
-$$N_i^{(e)} = \gamma N_i^{(e-1)} + n_i^{(e)}, \qquad R_i^{(e)} = \gamma R_i^{(e-1)} + r_i^{(e)}$$
-
-The UCB selection score combines exploitation (empirical mean yield) and exploration (uncertainty bonus with coefficient $c = 0.75$):
-$$\text{score}_i = \frac{R_i}{N_i} + c \sqrt{\frac{\ln \sum_j N_j}{N_i}}$$
-
-Reward accrual uses bounded, configurable weights with log-scaling to prevent high-throughput operators from dominating:
-$$\text{raw\_reward} = w_{\text{promo}} \cdot \text{promotions} + w_{\text{stage}} \cdot \text{stages} + w_{\text{oracle}} \cdot \text{oracles} + w_{\text{crash}} \cdot \text{crashes}$$
-$$r_i = \min\left(\ln(1 + \text{raw\_reward}),\; r_{\max} \cdot \max(1, n_i)\right)$$
-
-### 4.3 Probability Normalization with Minimum Floors
-To prevent arm starvation and ensure continuous exploration of the entire mutation spectrum, probabilities are normalized subject to strict floors ($f_{\text{fam}} = 0.05$, $f_{\text{op}} = 0.02$):
-$$p_i = f + (1 - K \cdot f) \frac{\text{score}_i}{\sum_{j \in \text{enabled}} \text{score}_j}$$
-Disabled arms receive exactly $p_i = 0.0$.
-
-### 4.4 In-Memory Provenance Ledger & Replay Safety
-To attribute corpus promotions unambiguously:
-1. When `LLVMFuzzerCustomMutator` produces a payload, it computes the 64-bit FNV-1a hash and enqueues `(hash, size, operator, family, epoch)` into a bounded in-memory FIFO map.
-2. When `LLVMFuzzerTestOneInput` receives bytes, it performs **single-consumption**: the record is matched, consumed, and erased from the pending queue. **Crucially, subsequent corpus replays never inherit stale attribution.**
-3. Consumed records are logged into a retained `provenance_ledger` (`hash:size`).
-4. At epoch completion, `campaign_manager.py` hashes newly retained corpus files and matches them against the ledger. Only unambiguous matches are credited; unmatched promotions are tracked separately.
-
-### 4.5 Conservative Saturation State Machine
-`saturation_monitor.py` implements a 6-state conservative controller to prevent premature stopping:
-- **`ACTIVE`:** Steady progress detected via corpus promotions or feature delta.
-- **`PLATEAU_SUSPECTED`:** 3 consecutive low-yield epochs observed.
-- **`RECOVERY`:** Bounded rescue phase boosting exploration ($1.5\times$) and refreshing template seeds.
-- **`SATURATED`:** Plateau persisted through recovery, minimum runtime (1800s) satisfied, telemetry complete, and zero un-triaged crash candidates pending.
-- **`BUDGET_STOP`:** Hard total wall-time budget reached (distinct from saturation).
-- **`ERROR`:** Missing or corrupted telemetry; fails safe without declaring saturation.
-
-### 4.6 Multi-Subprocess Execution Accounting
-In previous scripts, each trial was a restart loop where the reported execution count came from the *last* child process only. `campaign_manager.py` supervises libFuzzer with `-max_total_time` and **sums executions across ALL child invocations within an epoch**, providing completely accurate throughput and execution totals.
-
----
-
-## 5. Target Hierarchy
-
-- **`deep_fuzzer` (`fuzz/deep_fuzzer.cpp`):** Primary deep target. Decodes envelope profile byte, calls `Parser::loadGltf()`, executes validation, and traverses accessors with `GuardedBufferAdapter` and `ReferenceDecoder`.
-- **`parser_fuzzer` (`fuzz/parser_fuzzer.cpp`):** Baseline target evaluating pure parser throughput without downstream accessor traversal.
-- **`uri_fuzzer` (`fuzz/uri_fuzzer.cpp`):** Micro-target evaluating `fastgltf::URIView` RFC parsing, authorities, and percent-decoding.
-- **`base64_fuzzer` (`fuzz/base64_fuzzer.cpp`):** Differential micro-target evaluating AVX2 SIMD vs fallback base64 decoders.
-- **`coverage_runner` (`fuzz/coverage_runner.cpp`):** Non-fuzzing harness replaying corpus files for strict Clang source coverage mapping.
-
----
-
-## 6. Directory Structure
+## 3. Directory Layout
 
 ```
 src/
-├── CMakeLists.txt                       # CMake build file (targets, ASan, UBSan, tests)
-├── README.md                            # Comprehensive project guide (architecture, math, runs)
-├── cmake/
-│   └── coverage_allowlist.txt           # Restricts Clang coverage strictly to fastgltf & simdjson
-├── corpus/
-│   ├── gltf.dict                        # glTF 2.0 JSON dictionary for libFuzzer
-│   ├── seed/                            # 43 base glTF and binary GLB seed files
-│   └── generated/                       # Procedurally synthesized seed assets
-├── docs/                                # Technical design documents
-│   ├── accessor-preconditions.md        # Analysis of fastgltf accessor contract boundaries
-│   ├── architecture.md                  # Harness and oracle architectural specification
-│   ├── campaign_results.md              # Empirical campaign analysis and audit
-│   ├── experiments.md                   # Experimental protocol and hypothesis design
-│   ├── known_findings.md                # Known upstream issue classifications (Issue #144, #157)
-│   └── mutations.md                     # Mutation strategies and boundary values specification
-├── external/
-│   └── fastgltf/                        # Git submodule pinned to upstream v0.9.1 (commit 705564d)
-├── findings/                            # Campaign output, raw logs, and vulnerability reports
-│   ├── index.csv                        # Primary triage catalog of unique crash root causes
-│   ├── crashes/                         # Raw crash artifacts captured by libFuzzer
-│   ├── reports/                         # Markdown vulnerability reports (FINDING-001 to 012)
-│   └── trials/                          # Historical experimental trials
-├── fuzz/                                # Fuzz harnesses, custom mutators, and schedulers
-│   ├── asset_exerciser.cpp / .hpp       # Type-dispatched accessor iteration engine
-│   ├── base64_fuzzer.cpp                # Base64 SIMD differential micro-target
-│   ├── coverage_runner.cpp              # Corpus coverage replay runner
-│   ├── custom_mutator.cpp / .hpp        # Hybrid mutator with dynamic scheduler dispatch
-│   ├── deep_fuzzer.cpp                  # Primary deep fuzz target with stage recording
-│   ├── fuzz_common.hpp                  # Envelope parsing (splitEnvelope) and 8 profiles
-│   ├── glb_parser.cpp / .hpp            # Binary GLB container chunk unpacker/repacker
-│   ├── guarded_buffer_adapter.cpp/.hpp  # Isolated bufferView allocator with ASan redzones
-│   ├── hash_util.hpp                    # Shared 64-bit FNV-1a content hash
-│   ├── mutation_scheduler.cpp / .hpp    # Discounted-UCB scheduler and Operator Registry
-│   ├── mutation_telemetry.cpp / .hpp    # In-memory FIFO provenance map and stage recorder
-│   ├── parser_fuzzer.cpp                # Baseline parser target
-│   ├── reference_decoder.cpp / .hpp     # Checked integer arithmetic accessor extent oracle
-│   ├── telemetry.cpp / .hpp             # Execution, rejection, and violation telemetry
-│   └── uri_fuzzer.cpp                   # URIView RFC parsing micro-target
-├── generator/
-│   └── gltf_generator.cpp / .hpp        # Procedural mesh, box, and sparse glTF/GLB seed generator
-├── poc_f011.cpp                         # Standalone C++ PoC for Novel Zero-Day F011
-├── poc_base64_oob.cpp                   # Standalone C++ PoC for Novel Base64 LUT OOB
-├── scripts/                             # Automation scripts
-│   ├── build.sh                         # Multi-target CMake build driver
-│   ├── campaign.sh                      # Multi-trial bash campaign runner
-│   ├── campaign_manager.py              # Supervised epoch runner & UCB policy updater
-│   ├── campaign_policy.example.json     # Campaign configuration schema
-│   ├── coverage.sh                      # llvm-profdata and llvm-cov report generator
-│   ├── evaluate_campaign.py             # Campaign data processing and statistical audit
-│   ├── fuzz.sh                          # Single fuzzer invocation wrapper
-│   ├── merge_corpus.sh                  # Corpus distillation and minimization
-│   ├── minimize.sh                      # libFuzzer crash minimization wrapper
-│   ├── prepare_seeds.py                 # Algorithmic seed corpus generator
-│   ├── replay.sh                        # Standalone crash reproducer
-│   ├── saturation_monitor.py            # 6-state conservative saturation monitor
-│   ├── test_adaptive_fuzzer.py          # Python test suite for scheduler & saturation
-│   ├── triage.py                        # Symbolized crash stack triage & dedup
-│   ├── triage.sh                        # Triage shell wrapper
-│   └── validate.sh                      # Environment and dependency verification
-└── tests/                               # Standalone C++ unit test suites
-    ├── adapter_tests.cpp                # GuardedBufferDataAdapter bounds tests
-    ├── base64_tests.cpp                 # Base64 SIMD vs fallback parity tests
-    ├── generator_tests.cpp              # Procedural generator validation tests
-    ├── glb_tests.cpp                    # Binary GLB roundtrip and repair tests
-    ├── mutator_tests.cpp                # Custom mutator deterministic tests
-    ├── scheduler_tests.cpp              # Discounted-UCB, FNV-1a vectors, and provenance tests
-    └── uri_tests.cpp                    # URIView RFC parsing tests
+├── fastgltf/                      # Phase 1: Base structure-aware fuzzer for glTF 2.0
+│   ├── CMakeLists.txt             # Build configuration for fastgltf targets
+│   ├── fuzz/                      # Mutators, Discounted-UCB scheduler, telemetry
+│   │   ├── custom_mutator.cpp     # Multi-family hybrid mutator implementation
+│   │   ├── mutation_scheduler.cpp # Discounted-UCB bandit selection algorithm
+│   │   ├── gltf_generator.cpp     # Procedural glTF grammar generator
+│   │   └── mutation_telemetry.cpp # In-memory bandit ledger and reward attribution
+│   ├── harnesses/                 # Target binaries (fuzz_hybrid, fuzz_parser)
+│   ├── scripts/                   # Automated build, fuzz, and evaluation scripts
+│   └── findings/                  # Defect reproducers, crash artifacts, and logs
+│
+├── raylib/                        # Phase 2: Multimedia extension (37 targets)
+│   ├── build.sh                   # Unified build script (libfuzzer, afl, repro, cov)
+│   ├── common/                    # Subsystem shims and headless mocks
+│   │   ├── fuzz_common.h          # Parameter readers, headless stubs, capped allocators
+│   │   ├── fuzz_ucb.c             # Multi-armed bandit coverage interception wrapper
+│   │   └── standalone_main.c      # Zero-dependency crashing input reproducer harness
+│   ├── harnesses/                 # 37 subsystem harnesses (image_ops, render_vm, audio, ...)
+│   ├── tools/                     # Corpus generation, worker runners, and saturation monitors
+│   └── raylib_all_issues_bundle/  # Verified defect reproducers and test cases
+│
+└── drogon/                        # Phase 3: Network and asynchronous I/O extension
+    ├── build.sh                   # Target compilation script with in-memory shims
+    ├── common/                    # In-memory socket mocks and sandboxing
+    │   ├── fuzz_mock.h            # MockTcpConnection, MockEventLoop, IterationSandbox
+    │   ├── fuzz_mock.cc           # Memory buffer pump and tail-scheduled slicing
+    │   └── standalone_main.cc     # Standalone defect replay harness
+    ├── harnesses/                 # 19 network harnesses (http_request, multipart, websocket)
+    ├── dict/                      # Grammar dictionaries for HTTP, WebSocket, URI, and JSON
+    ├── tools/                     # Multi-core runner, campaign monitors, and triage scripts
+    └── drogon-issues-and-reproducers/ # Standalone reproducers and crash verification scripts
 ```
 
 ---
 
-## 7. Build and Verification Instructions
+## 4. How to Build and Run Fuzzing Campaigns
 
-All commands are executed from the `src/` directory in a WSL2 Ubuntu or Linux environment:
+### 4.1 Subsystem 1: `fastgltf` (3D Asset Parser)
 
-### Step 1: Build Targets with Sanitizers
-```bash
-cd src
+1. **Build the Fuzzing Targets:**
+   ```bash
+   cd src/fastgltf
+   ./scripts/build.sh
+   ```
+   This compiles the library with Clang 18, ASan, UBSan, and the custom UCB mutator into `build/`.
 
-# Build all fuzz targets and unit tests with Clang 18.1.3 + ASan + UBSan
-./scripts/build.sh asan
-```
+2. **Run the Adaptive Fuzzing Target:**
+   ```bash
+   ./scripts/fuzz.sh hybrid 1800
+   ```
+   Or run the binary directly with libFuzzer flags:
+   ```bash
+   ./build/fuzz_hybrid seeds/ -dict=dict/gltf.dict -max_len=1048576 -timeout=25
+   ```
 
-### Step 2: Run C++ Unit Test Suites
-```bash
-cd build-asan
-./scheduler_tests    # Verifies FNV-1a vectors, UCB math, floors, and provenance consumption
-./mutator_tests      # Verifies mutator determinism and bounds safety
-./glb_tests          # Verifies GLB chunk unpacker and structural repair
-./base64_tests       # Verifies AVX2 SIMD and fallback parity
-./adapter_tests      # Verifies ASan redzones and bounds checking
-./generator_tests    # Verifies procedural generator validity
-./uri_tests          # Verifies URIView RFC parsing
-cd ..
-```
-
-### Step 3: Run Python Unit Test Suite
-```bash
-python3 scripts/test_adaptive_fuzzer.py
-```
-This runs 8 unit test suites verifying:
-- Shared 64-bit FNV-1a test vectors matching C++ (`hash_util.hpp`)
-- Probability normalization with minimum floors and disabled arm handling
-- Discounted-UCB reward accrual, decay, and exploration bonus
-- Multi-subprocess log parsing and restart-resilient execution accounting
-- Robustness against malformed or truncated logs
-- Exact corpus promotion matching against the provenance ledger
-- 6-state saturation monitor state transitions and recovery sequences
-- Fixed baseline (25/25/40/10) preservation
+3. **Inspect Bandit Telemetry:**
+   Bandit arm weights, operator yields, and saturation metrics are logged periodically to stdout and recorded in `fuzz_telemetry.csv`.
 
 ---
 
-## 8. Running Campaigns Across the 4 Comparative Modes
+### 4.2 Subsystem 2: `raylib` (Multimedia Engine)
 
-The campaign manager (`scripts/campaign_manager.py`) coordinates epoch execution, child process supervision, telemetry collection, and report generation:
+1. **Build the 37 Subsystem Targets:**
+   ```bash
+   cd src/raylib
+   ./build.sh libfuzzer
+   ```
+   Binaries are compiled into `out/libfuzzer/`.
 
-```bash
-# Mode 1: Baseline Fixed Schedule (25/25/40/10)
-python3 scripts/campaign_manager.py \
-  --mode fixed \
-  --target deep_fuzzer \
-  --output-dir findings/campaign_fixed \
-  --epoch-seconds 300 \
-  --hard-max-seconds 7200
+2. **Run Representative Subsystem Targets:**
+   - **Software Rasterizer & Matrix Stack (`fuzz_render_vm`):**
+     ```bash
+     ./out/libfuzzer/fuzz_render_vm seeds/fuzz_render_vm -runs=1000000 -max_len=8192
+     ```
+   - **Image Transformation VM (`fuzz_image_ops`):**
+     ```bash
+     ./out/libfuzzer/fuzz_image_ops seeds/fuzz_image_ops -runs=1000000 -max_len=16384
+     ```
+   - **Audio Decoding & Stream Conversion (`fuzz_audio_wav`):**
+     ```bash
+     ./out/libfuzzer/fuzz_audio_wav seeds/fuzz_audio_wav -runs=1000000 -max_len=65536
+     ```
+   - **Automation Event Replay (`fuzz_automation`):**
+     ```bash
+     ./out/libfuzzer/fuzz_automation seeds/fuzz_automation -runs=1000000 -max_len=4096
+     ```
 
-# Mode 2: Dynamic Discounted-UCB Adaptive Fuzzer
-python3 scripts/campaign_manager.py \
-  --mode adaptive \
-  --target deep_fuzzer \
-  --output-dir findings/campaign_adaptive \
-  --epoch-seconds 300 \
-  --hard-max-seconds 7200
-
-# Mode 3: Fixed Baseline with Conservative Saturation Monitor
-python3 scripts/campaign_manager.py \
-  --mode fixed_with_saturation \
-  --target deep_fuzzer \
-  --output-dir findings/campaign_fixed_sat \
-  --epoch-seconds 300 \
-  --hard-max-seconds 7200
-
-# Mode 4: Full Adaptive Hybrid Fuzzer with Saturation Monitor
-python3 scripts/campaign_manager.py \
-  --mode adaptive_with_saturation \
-  --target deep_fuzzer \
-  --output-dir findings/campaign_adaptive_sat \
-  --epoch-seconds 300 \
-  --hard-max-seconds 7200
-```
-
-### Campaign Output Deliverables:
-Every campaign output directory contains:
-- `config_used.json`: Complete configuration used.
-- `policy_epoch_XXX.json`: Serialized scheduler weights for each epoch.
-- `epoch_XXX.log`: Raw stdout/stderr logs from all subprocesses within the epoch.
-- `epoch_XXX_metrics.json`: Detailed executions, restarts, coverage, promotions, and stage outcomes.
-- `epoch_XXX_telemetry.json`: In-memory telemetry snapshot and provenance ledger.
-- `corpus_manifest.json`: Snapshot of all corpus seeds with FNV-1a hashes, sizes, and operator attribution.
-- `findings/crashes/`: Captured crash artifacts.
-- `campaign_summary.json`: Complete machine-readable campaign metrics and saturation decision logs.
-- `campaign_report.md`: Formatted Markdown report with epoch progression tables.
+3. **Run Multi-Worker Ensemble:**
+   ```bash
+   tools/run_libfuzzer.sh 16 24    # 16 workers, 24-hour campaign
+   ```
 
 ---
 
-## 9. Reproducing Discovered Vulnerabilities
+### 4.3 Subsystem 3: `drogon` (Asynchronous Web Framework)
 
-### Novel Zero-Day F011: Heap Out-of-Bounds Read in `Parser::generateMeshIndices`
-```bash
-# Compile standalone proof-of-concept
-clang++ -std=c++17 -fsanitize=address,undefined -g -O0 \
-  -Iexternal/fastgltf/include poc_f011.cpp \
-  -Lbuild-asan/external/fastgltf -lfastgltf -o poc_f011
+1. **Build the 19 Network Targets:**
+   ```bash
+   cd src/drogon
+   ./build.sh libfuzzer
+   ```
+   Binaries are compiled into `out/libfuzzer/`.
 
-# Trigger vulnerability with minimized crash artifact
-./poc_f011 findings/crashes/crash-db0170fae561bcc1186860580e462803e93ecac1
-```
+2. **Run Representative Network Targets:**
+   - **HTTP Request Framing & Pipeline Parsing:**
+     ```bash
+     ./out/libfuzzer/fuzz_http_request seeds/fuzz_http_request -dict=dict/http.dict -runs=1000000
+     ```
+   - **Multipart Form & File Upload Decoder:**
+     ```bash
+     ./out/libfuzzer/fuzz_multipart_form seeds/fuzz_multipart_form -dict=dict/multipart.dict -runs=1000000
+     ```
+   - **WebSocket Frame Parser:**
+     ```bash
+     ./out/libfuzzer/fuzz_websocket seeds/fuzz_websocket -dict=dict/websocket.dict -runs=1000000
+     ```
 
-### Novel Finding: Base64 Lookup Table Out-of-Bounds Read
-```bash
-clang++ -std=c++17 -fsanitize=address,undefined -g -O0 \
-  -Iexternal/fastgltf/include poc_base64_oob.cpp \
-  -Lbuild-asan/external/fastgltf -lfastgltf -o poc_base64_oob
+3. **Run Multi-Worker Campaign with Tail Slicing:**
+   ```bash
+   tools/run_libfuzzer.sh 16 24    # 16 workers, 24-hour campaign
+   ```
 
-./poc_base64_oob findings/crashes/crash-9ea971d643fe14c0048d3bc354cb432e185ae144
-```
+---
+
+## 5. Verified Vulnerabilities & Standalone Reproducers
+
+QTFuzz uncovered **6 verified vulnerabilities** across the three subject systems. Each defect has a standalone, zero-dependency C/C++ reproducer that verifies the issue without requiring the fuzzer runtime.
+
+### Summary Table
+
+| ID | Subject | Component & Function | Vulnerability Classification | CWE | Upstream Status |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **F1** | `fastgltf` | `Parser::generateMeshIndices` | Heap Buffer Overflow | CWE-122 | **Closed**; fixed through commit by maintainer (Issue #160) |
+| **R1** | `raylib` | `swPopMatrix()` in `rlsw.h` | Matrix Stack Underflow | CWE-119 | **Acknowledged**; PR #6362 merged (Issue #6361) |
+| **R2** | `raylib` | `ExportAutomationEventList()` | Out-of-Bounds Global Array Read | CWE-125 | **Acknowledged**; maintainer fixed (Issue #6378) |
+| **R3** | `raylib` | `LoadWaveSamples()` | NULL Pointer Dereference | CWE-476 | **Acknowledged**; PR closed, maintainer fixed alternatively in commit 7639166 (Issue #6373) |
+| **D1** | `drogon` | `HttpFileImpl::save()` | Process Abort in `noexcept` Method | CWE-755 | **Closed**; PR #2662 merged |
+| **D2** | `drogon` | `HttpFileImpl::save()` | Out-of-Bounds Iterator Dereference | CWE-125 | **Closed**; issue raised, fixed in commit by maintainer after raised (PR #2656) |
+
+---
+
+### 5.1 Reproducing Defect F1 (`fastgltf`)
+- **Bug Description:** When parsing glTF files with primitives lacking index buffers, `Parser::generateMeshIndices` reads accessor indices without bounds checking against the total accessor count, causing out-of-bounds heap memory reads.
+- **Reference:** Upstream Issue [#160](https://github.com/spnda/fastgltf/issues/160).
+- **Reproduction Command:**
+  ```bash
+  cd src/fastgltf
+  clang++ -fsanitize=address,undefined -std=c++17 -Iinclude \
+          findings/known/issue_160_reproducer.cpp -Lbuild -lfastgltf -o repro_f1
+  ./repro_f1
+  ```
+
+---
+
+### 5.2 Reproducing Defect R1 (`raylib`)
+- **Bug Description:** In the software rasterizer (`src/external/rlsw.h`), calling `swPopMatrix()` when `stackModelviewCounter == 1` causes an unsigned integer underflow (`--counter - 1 = -1`), corrupting the active transform pointer and causing a crash on the subsequent draw call.
+- **Reference:** Upstream Issue [#6361](https://github.com/raysan5/raylib/issues/6361), Pull Request [#6362](https://github.com/raysan5/raylib/pull/6362).
+- **Reproduction Command:**
+  ```bash
+  cd src/raylib
+  ./build.sh repro
+  ./out/repro/fuzz_render_vm raylib_all_issues_bundle/pending_issues_bundle/Issue-01_swPopMatrix_Underflow/crash.bin
+  ```
+
+---
+
+### 5.3 Reproducing Defect R2 (`raylib`)
+- **Bug Description:** In `src/rcore.c`, `autoEventTypeName()` indexes into the fixed array `autoEventTypeNames[24]` using unvalidated `event.type`. Providing `event.type >= 24` reads unmapped memory.
+- **Reference:** Upstream Issue [#6378](https://github.com/raysan5/raylib/issues/6378).
+- **Reproduction Command:**
+  ```bash
+  cd src/raylib
+  ./build.sh repro
+  ./out/repro/fuzz_automation raylib_all_issues_bundle/pending_issues_bundle/Issue-01_Automation_Export_OOB_Read/crash_event_type_24.bin
+  ```
+
+---
+
+### 5.4 Reproducing Defect R3 (`raylib`)
+- **Bug Description:** In `src/raudio.c`, `LoadWaveSamples()` does not check whether `RL_MALLOC()` returns `NULL` on oversized sample allocations, immediately dereferencing address zero during format conversion.
+- **Reference:** Upstream Issue [#6373](https://github.com/raysan5/raylib/issues/6373), Pull Request [#6374](https://github.com/raysan5/raylib/pull/6374).
+- **Reproduction Command:**
+  ```bash
+  cd src/raylib
+  ./build.sh repro
+  ./out/repro/fuzz_audio_wav raylib_all_issues_bundle/pending_issues_bundle/Issue-06_Audio_Mixer_Buffer_NULL_Deref/crash_alloc_fail.bin
+  ```
+
+---
+
+### 5.5 Reproducing Defect D1 (`drogon`)
+- **Bug Description:** In `HttpFileImpl::save()` and `saveAs()`, methods declared `noexcept` invoke throwing overloads of `std::filesystem::exists`. When an upload filename exceeds 255 bytes, `std::filesystem_error` is thrown, triggering `std::terminate()` and killing the entire web server process.
+- **Reference:** Upstream Pull Request [#2662](https://github.com/drogonframework/drogon/pull/2662) (Addresses Issue #2661).
+- **Reproduction Command:**
+  ```bash
+  cd src/drogon/drogon-issues-and-reproducers/issue-02-filesystem-noexcept-dos
+  clang++ -fsanitize=address,undefined -std=c++17 reproduce_standalone.cc -o repro_d1
+  ./repro_d1
+  ```
+
+---
+
+### 5.6 Reproducing Defect D2 (`drogon`)
+- **Bug Description:** In `HttpFileImpl::save()`, path traversal validation advances iterators over target path components without verifying that the source iterator has not reached `end()`, causing out-of-bounds iterator dereferencing under directory traversal prefixes such as `../../c`.
+- **Reference:** Upstream Pull Request [#2656](https://github.com/drogonframework/drogon/pull/2656) / [#2659](https://github.com/drogonframework/drogon/pull/2659).
+- **Reproduction Command:**
+  ```bash
+  cd src/drogon/drogon-issues-and-reproducers/issue-01-httpfile-iterator-oob
+  clang++ -fsanitize=address,undefined -std=c++17 reproduce_standalone.cc -o repro_d2
+  ./repro_d2
+  ```
+
+---
+
+## 6. Campaign Execution Metrics
+
+Across 24-hour evaluation campaigns on an x86_64 AMD workstation (16 logical cores, Ubuntu 24.04 LTS), QTFuzz executed **807,520,128 cumulative inputs** across 59 target binaries:
+
+| Subsystem | Targets | LoC | Total Iterations | Peak Throughput | Discovered Edges | Verified Defects |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `fastgltf` (3D Parser) | 3 | 14,280 | 3,200,000 | 145 exec/s | 4,218 | 1 (F1) |
+| `raylib` (Multimedia Engine) | 37 | 118,940 | 54,320,128 | 8,920 exec/s | 47,121 | 3 (R1, R2, R3) |
+| `drogon` (Asynchronous Web Server) | 19 | 68,410 | 750,000,000 | 53,732 exec/s | 3,178 | 2 (D1, D2) |
+| **Total** | **59** | **201,630** | **807,520,128** | **53,732 exec/s** | — | **6** |

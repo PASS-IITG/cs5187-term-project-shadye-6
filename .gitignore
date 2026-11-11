@@ -1,44 +1,37 @@
-# Build artifacts
-build-*/
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.blg
+*.bbl
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+main.pdf
+
+# Fuzzer, compiler, and temporary working directories
+out/
+work/
 build/
-bin/
+cmake-build-*/
 *.o
 *.a
 *.so
 *.dylib
-*.dll
 *.exe
-compile_commands.json
+*.zip
 
-# CMake temporary files
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-*.ninja
-.ninja_*
-
-# Python caches
-__pycache__/
-*.pyc
-*.pyo
-.pytest_cache/
-
-# Fuzzing runtime findings & logs
-findings/trials/
-findings/campaign_runs/
-findings/crashes/crash-*
-findings/timeouts/
-corpus/work/
-corpus/merged/
-*.profraw
-*.profdata
+# Raw campaign logs and generated HTML coverage dumps
 *.log
+src/drogon/reports/*.log
+**/coverage_report/
+**/coverage_report_final/
+**/raylib-fuzz-report/
 
-# IDE & Editor files
-.vscode/
-.idea/
-*.swp
-*~
+# OS & Editor files
 .DS_Store
-
+Thumbs.db
+*~
+*.swp
+commit_plan.sh

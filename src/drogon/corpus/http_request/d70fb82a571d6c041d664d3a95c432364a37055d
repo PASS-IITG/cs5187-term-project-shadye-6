@@ -1,0 +1,14 @@
+POST / HTTP/1.1
+Hos : localhost
+Conngt : 5
+Trans°ET Encoding: chunk/ HTTP/1.1
+Hos :tlocalhost
+Content-Length: 2
+Transfer-Ent-Length: 5
+Transfer-EncoDingth: 2
+Transner-EncoDing:
+helno
+5
+hellHEADo
+0
+

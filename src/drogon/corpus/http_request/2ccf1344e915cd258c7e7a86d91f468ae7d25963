@@ -1,0 +1,3 @@
+GET ch HTTP/1.1
+
+MKCOL loc

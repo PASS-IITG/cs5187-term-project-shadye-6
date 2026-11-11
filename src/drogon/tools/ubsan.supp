@@ -1,0 +1,2 @@
+# Drogon campaign UBSan suppressions. Empty until a campaign confirms a benign third-party UB
+# (e.g. in jsoncpp/zlib) worth muting so fuzzing continues past it. Format: <check>:<function>

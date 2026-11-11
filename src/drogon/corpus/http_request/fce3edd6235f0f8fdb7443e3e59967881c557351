@@ -1,0 +1,6 @@
+GET / HTTP/1.1
+Host: localhos
+t
+GET /echo localhostontent-Length: 4
+
+test

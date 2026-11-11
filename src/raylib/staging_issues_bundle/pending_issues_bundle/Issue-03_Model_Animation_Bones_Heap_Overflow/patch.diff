@@ -1,0 +1,12 @@
+diff --git a/src/rmodels.c b/src/rmodels.c
+--- a/src/rmodels.c
++++ b/src/rmodels.c
+@@ -2329,7 +2329,8 @@ void UpdateModelAnimationBones(Model model, ModelAnimation anim, float frame)
+ 
+         // Update all bones and bone matrices of model
+-        for (unsigned int boneIndex = 0; boneIndex < model.skeleton.boneCount; boneIndex++)
++        unsigned int boneCount = (model.skeleton.boneCount < anim.boneCount)? model.skeleton.boneCount : anim.boneCount;
++        for (unsigned int boneIndex = 0; boneIndex < boneCount; boneIndex++)
+         {
+             // Compute interpolated pose between current and next frame
+             // NOTE: Storing animation frame data in model.currentPose

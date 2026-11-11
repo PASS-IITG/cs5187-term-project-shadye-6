@@ -1,0 +1,8 @@
+# Known third-party UB, muted so fuzzing continues past it (each is listed in README "Findings").
+# K7: dr_wav float->s16 conversion of out-of-range float samples (attacker-controlled PCM)
+signed-integer-overflow:drwav_f32_to_s16
+signed-integer-overflow:drwav_f64_to_s16
+# miniaudio sample conversion of out-of-range floats (same root cause as K7)
+signed-integer-overflow:ma_pcm_f32_to_s16
+# K13: raylib FloatToHalf() shift exponent underflow for tiny/zero floats (rtextures.c ~5825)
+shift-exponent:FloatToHalf

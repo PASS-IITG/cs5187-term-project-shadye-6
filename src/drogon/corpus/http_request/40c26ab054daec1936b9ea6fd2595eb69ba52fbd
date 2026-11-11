@@ -1,0 +1,13 @@
+GET /`HTTPh HTTP/1.1
+
+MKCOL cGET+cl HTTP/1.1
+
+MKCOL ch HTTP/1.1
+
+MKCOL lh HTTP/1.1
+
+MKCOL loc/0.1
+Hot:ost
+Content-Length: 8
+
+test

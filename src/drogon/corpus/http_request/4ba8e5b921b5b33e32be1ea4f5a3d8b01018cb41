@@ -1,0 +1,13 @@
+GET / HTTP/1.1
+Host: local/1.1
+Host: localhost
+
+GET /eOOOcho HTTP/1.1
+Èost: localhoót
+Cont0eft:LxiP	host
+
+GET /eOOOcho HTTP/1.1
+Èost: localhoót
+Cont0eft:LxiP	S 4
+
+test

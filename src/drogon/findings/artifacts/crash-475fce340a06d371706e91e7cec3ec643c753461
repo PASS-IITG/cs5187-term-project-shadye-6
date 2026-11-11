@@ -1,0 +1,10 @@
+------ name="username"
+
+drogon_user
+------WebKitFormBoundary7MA4YWxkTr---- nan_user
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="upload; filename="hello.txt"Zu0gW
+Content-Disposition: form-data; name=ØŠ“›æ; filype: text/plain
+
+Hello, Drogon multipart fuzzer!
+------WebKitFormBoundary7MA4YWxkTrZu0gW--

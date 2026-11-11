@@ -1,0 +1,19 @@
+[Command]
+out/repro/fuzz_image_ops work/crashes/fuzz_image_ops/crash-000d31a1b3d2568c4fa0000d5c1841421303b567
+
+[Output]
+[run] /mnt/c/Users/dxksh/Desktop/swa/raylib/work/crashes/fuzz_image_ops/crash-000d31a1b3d2568c4fa0000d5c1841421303b567 (349)
+=================================================================
+==41==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x73ac2c4ff7e0 at pc 0x625e0a653a68 bp 0x7fff820c5f10 sp 0x7fff820c5f08
+READ of size 4 at 0x73ac2c4ff7e0 thread T0
+    #0 0x625e0a653a67 in ImageBlurGaussian /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rtextures.c:2223:72
+    #1 in LLVMFuzzerTestOneInput /mnt/c/Users/dxksh/Desktop/swa/raylib/harness/fuzz_image_ops.c:80:78
+    #2 in run /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:19:48
+    #3 in main /mnt/c/Users/dxksh/Desktop/swa/raylib/common/standalone_main.c:21:66
+
+0x73ac2c4ff7e0 is located 32 bytes before 2097152-byte region [0x73ac2c4ff800,0x73ac2c6ff800)
+allocated by thread T0 here:
+    #0 in malloc
+    #1 in ImageBlurGaussian /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rtextures.c:2179:39
+SUMMARY: AddressSanitizer: heap-buffer-overflow /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/rtextures.c:2223:72 in ImageBlurGaussian
+==41==ABORTING

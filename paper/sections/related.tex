@@ -1,16 +1,22 @@
 \section{Related Work}
 \label{sec:related}
-%% One \paragraph{Topic.} per line of work, closest first ("Closest to us is
-%% the work of ..."). Summarise each work in one sentence with its citation.
-%% END EVERY PARAGRAPH with how we differ: "We share their goal, but ...",
-%% "These methods ..., but only for ... We aim at ...".
-%% Cite own prior work in the third person while anonymous.
-\focus{\textbf{Related work.} Group prior work by topic, closest to your
-  project first. One \texttt{\textbackslash paragraph\{Topic.\}} per line of
-  work, each summarised in one or two sentences with a \emph{verified}
-  citation. \textbf{End every paragraph with how you differ} (``We share
-  their goal, but \ldots''). Do not just list papers --- position yours
-  against them. Fabricated citations are not accepted.}
 
-\paragraph{\todo{Closest topic}.} Closest to us is \todo{}. We share their
-goal, but \todo{difference}.
+\paragraph{Structure-Aware and Grammar Fuzzing.}
+Coverage-guided fuzzers such as libFuzzer~\cite{serebryany2016libfuzzer} and AFL++~\cite{fioraldi2020aflplusplus} support custom mutators to generate inputs conforming to complex grammars.
+Researchers have developed grammar-based engines to fuzz compilers, interpreters, and 3D format parsers.
+We share their goal of maintaining structural validity to reach deep code paths.
+However, prior grammar fuzzers target standalone file parsers; \tool extends structure-aware mutation to interactive multimedia rendering and asynchronous network streams via headless in-memory shims.
+
+\paragraph{Adaptive Mutation and Bandit Scheduling.}
+Adaptive fuzzing systems dynamically allocate mutation energy.
+AFLFast~\cite{bohme2016aflfast} models seed transitions as Markov chains to prioritize low-frequency execution paths.
+Other approaches formulate operator selection as a multi-armed bandit problem~\cite{auer2002ucb}.
+We share their goal of optimizing mutation operator payoffs based on coverage discovery.
+We differ by decoupling coverage accounting from compiler runtimes using GNU linker symbol wrapping (\texttt{-Wl,--wrap}), allowing our UCB1 bandit scheduler to intercept edge rewards independently without colliding with libFuzzer's internal state.
+
+\paragraph{Network and Protocol Fuzzing.}
+Fuzzing network protocols began with black-box random input injection on UNIX network utilities~\cite{miller1990fuzz}.
+Modern stateful network fuzzers send packets over real operating system sockets, recording response codes to infer state transitions.
+We share their goal of discovering protocol desynchronization, framing anomalies, and memory corruptions in network software.
+However, existing network fuzzers suffer from operating system socket allocation and context-switching overheads, capping throughput to hundreds of executions per second.
+We eliminate socket overhead by implementing in-memory mock network connections and tail-scheduled chunk slicing, achieving over 53{,}000 executions per second directly within user space.

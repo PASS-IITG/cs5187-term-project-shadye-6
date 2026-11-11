@@ -1,0 +1,13 @@
+# multipart/form-data body grammar
+"multipart/form-data; boundary="
+"boundary="
+"--"
+"\x0d\x0a"
+"--abc"
+"--abc--"
+"Content-Disposition: form-data; "
+"name=\""
+"filename=\""
+"Content-Type: "
+"application/octet-stream"
+"text/plain"

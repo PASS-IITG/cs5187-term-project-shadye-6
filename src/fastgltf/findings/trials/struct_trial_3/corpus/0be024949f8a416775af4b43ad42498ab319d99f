@@ -1,0 +1,15 @@
+{
+  "asset": {"version": "2.0"},
+  "buffers": [{"byteLength": 44, "uri": "data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAMSFT_texture_ddsACAPwAAAAAAAAAAAAAAPwAAgD8AAAAMAT2AAAABAAIAAAA="}],
+  "bufferViews": [
+    {"buffer": 0, "byteOffset": 0, "byteLength": 36, "target": 34962},
+    {"buffer": 0, "byteOffset": 36, "byteLength": 8, "target": 34963}
+  ],
+  "accessors": [
+    {"bufferView": 0, "byteOffset": 0, "componecount": 3, "type":8888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888 "SCALAR", "max": [2], "iin": [0]}
+  ],
+  "meshes": [{"primitives": [{"attributes": {"POSITION": 0}, "indices": 1}]}],
+  "nodes": [{"mesh": 0}],
+  "scenes": [{"nodes": [0]}],
+  "scene": 0
+}

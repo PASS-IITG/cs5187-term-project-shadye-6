@@ -1,8 +1,35 @@
 \section{Background}
 \label{sec:background}
-%% Only what a reader needs for the rest of the paper. One \paragraph{} per
-%% concept. Define each term once with \emph{term} and use it the same way
-%% afterwards (no synonyms). Walk through the motivating example in detail
-%% here if the introduction was brief (label it sec:example).
 
-\paragraph{\todo{Concept}.} \todo{Plain definition, then a small example.}
+\paragraph{Coverage-Guided Fuzzing.}
+Coverage-guided fuzzing evaluates software by feeding mutated inputs into a target function while monitoring program execution.
+Compilers such as Clang instrument basic blocks with feedback counters.
+The fuzzing engine, such as libFuzzer~\cite{serebryany2016libfuzzer}, retains inputs that trigger new execution paths or edge transitions.
+AddressSanitizer (ASan)~\cite{serebryany2012asan} and UndefinedBehaviorSanitizer (UBSan) detect memory safety violations, out-of-bounds array reads, and integer overflows at the exact point of failure.
+
+\paragraph{Multi-Armed Bandit Scheduling.}
+An adaptive mutator must decide which mutation operator to apply to a given input.
+This decision maps directly to the classical \emph{multi-armed bandit problem}~\cite{auer2002ucb}.
+Given $K$ mutation operators (arms), the scheduler balances exploitation (allocating pulls to operators that historically yielded new coverage edges) with exploration (trying less frequent operators).
+The UCB1 algorithm computes an upper confidence bound score for each arm $i$:
+\begin{equation}
+\label{eq:ucb1}
+\ArmScore{i} = \Reward{i} + C \cdot \sqrt{\frac{2 \ln \TotalPulls}{\Pulls{i}}}
+\end{equation}
+where $\Reward{i}$ represents the mean reward of arm $i$, $\Pulls{i}$ is the pull count of arm $i$, $\TotalPulls = \sum_{j} \Pulls{j}$ is the total number of pulls, and $C$ is an exploration parameter.
+In coverage-guided fuzzing, the reward corresponds to discovering previously unseen branch edges.
+
+\paragraph{Structured 3D Asset Formats.}
+The glTF 2.0 standard~\cite{khronos_gltf2} stores 3D scenes as structured JSON metadata paired with binary buffers.
+The binary GLB container consists of a 12-byte header followed by chunk entries.
+Parsers such as \fastgltf decode JSON elements (nodes, meshes, accessors) and map byte offsets into binary vertex buffers.
+Fuzzing such formats requires maintaining structural coherence; purely random byte flips frequently fail at early syntax verification stages.
+
+\paragraph{Multimedia Engines.}
+Game engines such as \raylib integrate graphics, audio streams, and event serialization in C.
+Fuzzing these components requires simulating display contexts and audio buffers in memory without physical hardware.
+
+\paragraph{Asynchronous Web Architectures.}
+Modern C++ web servers such as \drogon handle high-concurrency HTTP traffic through asynchronous I/O.
+The networking core uses thread-bound event loops that manage socket buffers and callback chains.
+Testing these parsers requires driving event loops synchronously in memory to avoid operating system socket latency.

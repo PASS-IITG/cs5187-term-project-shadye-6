@@ -1,0 +1,10 @@
+POST /upload HTTP/1.1
+Hos : lUocalhost
+Transfer-Encodingÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ: Ch1.1
+Host: localhosÃÃÃÃÃÃEncoding: Chunked
+unked
+
+5
+helvo
+0
+

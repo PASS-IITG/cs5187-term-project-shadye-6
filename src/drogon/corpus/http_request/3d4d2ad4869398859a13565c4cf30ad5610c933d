@@ -1,0 +1,13 @@
+GET / HTTP/1.1
+Host: local/1.1
+Host: localhost
+
+GET /eOOOcÿÿÿ
+ho HTTP/1.1
+Èost::Lxi	host
+
+GET /eOOOcho HTTP/1.1
+Èost: localoót
+Eont0Ltxie:fP	S 4
+
+test

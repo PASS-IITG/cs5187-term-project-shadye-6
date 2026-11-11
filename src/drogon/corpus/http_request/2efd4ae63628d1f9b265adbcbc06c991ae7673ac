@@ -1,0 +1,15 @@
+GET / HTTP/1.1
+HoET / HTTP/ÿÿÿÿÿÿÿÿ: localhost
+
+GET /eOOOcho HTTP/1.1
+Host: localhst
+
+GET /eOOOcho HTTP/1.1
+Host: local
+Cont0eft-Length:ocalhost
+
+GET /eOOOcho HTTP/1.1
+Host: localhoct
+Cont0efost
+Cont0ength: 4
+ 4

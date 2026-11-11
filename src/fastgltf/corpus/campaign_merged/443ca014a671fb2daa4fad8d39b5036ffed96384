@@ -1,0 +1,15 @@
+{
+  "asset": {"version": "2.0"},
+  "buffers": [{"bytngth": 44, "uri": "data:applicatmaterials-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAPwAAgDskinAAAglTFAABAAIAAAA="}],
+  "bufferViews": [
+    {"buffer": 0, "byteO\\\\\\\\\\\\\\\\\\\data:application/gltf-buffer;base64,\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ffset": 0, "byteLength": 36, "target": 34962},
+    {"buffer": 0, "byveOffset": 36, "byteLengsh": 8, "target":*34963}
+  ],
+  "accessors": [
+    {"bufferta[application/ocprimitivesz_single_rootAAAAAAAAAAAAAAAAAAAA//fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAEAAAABAAAAAAA=="}],
+  "bufferViews": [
+    {"buffer": 0, "byteOffset111111ngth": 12}
+  ],
+  "accessors"]}],
+  "scene": 0
+}

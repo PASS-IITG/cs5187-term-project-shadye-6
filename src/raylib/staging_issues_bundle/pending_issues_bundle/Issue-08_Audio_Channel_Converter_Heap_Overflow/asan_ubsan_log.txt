@@ -1,0 +1,18 @@
+=================================================================
+==10==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x7f1d57bda400 at pc 0x629ba41a72ec bp 0x7ffd41dd74b0 sp 0x7ffd41dd74a8
+WRITE of size 4 at 0x7f1d57bda400 thread T0
+    #0 0x629ba41a72eb in ma_channel_converter_process_pcm_frames__mono_in /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/external/miniaudio.h:55630:49
+    #1 0x629ba41a72eb in ma_channel_converter_process_pcm_frames /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/external/miniaudio.h:55867:61
+    #2 0x629ba41ab8c6 in ma_data_converter_process_pcm_frames__resample_first /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/external/miniaudio.h:56720:22
+    #3 0x629ba41ab8c6 in ma_data_converter_process_pcm_frames /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/external/miniaudio.h:56929:70
+    #4 0x629ba41b0761 in ma_convert_frames_ex /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/external/miniaudio.h:58084:18
+    #5 0x629ba426e94e in ma_convert_frames /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/external/miniaudio.h:58046:12
+    #6 0x629ba426e94e in LoadSoundFromWave /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:975:37
+
+0x7f1d57bda400 is located 0 bytes after 220945408-byte region [0x7f1d4a924800,0x7f1d57bda400)
+allocated by thread T0 here:
+    #0 0x629ba410579d in calloc
+    #1 0x629ba426bc67 in LoadAudioBuffer /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:587:64
+    #2 0x629ba426e895 in LoadSoundFromWave /mnt/c/Users/dxksh/Desktop/swa/raylib-src/src/raudio.c:972:36
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow in ma_channel_converter_process_pcm_frames__mono_in
