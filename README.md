@@ -97,8 +97,8 @@ Over a combined 24-hour campaign on an x86_64 AMD workstation (16 logical cores,
 
 | ID | Subject | Component | Vulnerability Class | CWE | Upstream Issue / PR | Resolution Status |
 | :---: | :--- | :--- | :--- | :---: | :--- | :--- |
-| **F1** | `fastgltf` | `generateMeshIndices` | Heap Buffer Overflow | CWE-122 | [Issue #160](https://github.com/spnda/fastgltf/issues/160) | **Closed**; fixed via maintainer commit |
-| **R1** | `raylib` | `swPopMatrix()` in `rlsw.h` | Matrix Stack Underflow | CWE-119 | [Issue #6361](https://github.com/raysan5/raylib/issues/6361) / [PR #6362](https://github.com/raysan5/raylib/pull/6362) | **Acknowledged**; PR #6362 merged upstream |
+| **F1** | `fastgltf` | `generateMeshIndices` | Out-of-Bounds Heap Read | CWE-125 | [Issue #160](https://github.com/spnda/fastgltf/issues/160) | **Closed**; fixed via maintainer commit |
+| **R1** | `raylib` | `swPopMatrix()` in `rlsw.h` | Integer Underflow | CWE-191 | [Issue #6361](https://github.com/raysan5/raylib/issues/6361) / [PR #6362](https://github.com/raysan5/raylib/pull/6362) | **Acknowledged**; PR #6362 merged upstream |
 | **R2** | `raylib` | `ExportAutomationEventList()` | Out-of-Bounds Heap Read | CWE-125 | [Issue #6378](https://github.com/raysan5/raylib/issues/6378) | **Acknowledged**; fixed via maintainer commit |
 | **R3** | `raylib` | `LoadWaveSamples()` | NULL Pointer Dereference | CWE-476 | [Issue #6373](https://github.com/raysan5/raylib/issues/6373) / [Commit 7639166](https://github.com/raysan5/raylib/commit/7639166019f6d300435a2610726150558f745bee) | **Acknowledged**; fixed alternatively by maintainer |
 | **D1** | `drogon` | `HttpFileImpl::save()` | Process Abort in `noexcept` | CWE-755 | [Issue #2661](https://github.com/drogonframework/drogon/issues/2661) / [PR #2662](https://github.com/drogonframework/drogon/pull/2662) | **Closed**; PR #2662 merged upstream |
