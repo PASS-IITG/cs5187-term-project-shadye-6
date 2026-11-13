@@ -32,11 +32,11 @@
 % ---- research questions ----
 \newcommand{\rqref}[1]{\textbf{RQ#1}\xspace}
 
-% ---- results: one boxed, numbered claim per observation ----
+% ---- results: one numbered claim per observation ----
 \newcounter{observation}
 \newenvironment{observation}
-  {\refstepcounter{observation}\par\vspace{0.5pt}\noindent\begingroup\setlength{\fboxsep}{2pt}\fbox{\parbox{0.97\linewidth}{\textbf{Observation~\theobservation.}~}}}
-  {\endgroup\par\vspace{0.5pt}}
+  {\refstepcounter{observation}\par\vspace{2pt}\noindent\textbf{Observation~\theobservation.}\space}
+  {\par\vspace{2pt}}
 
 % ---- spacing adjustments ----
 \AtBeginDocument{%

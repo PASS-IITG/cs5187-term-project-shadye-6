@@ -2,12 +2,12 @@
 \label{sec:eval}
 
 We evaluate \tool to answer four research questions:
-\begin{itemize}
-  \item[\rqref{1}] \textbf{Throughput \& Coverage:} Can \tool achieve high execution throughput and discover deep branch coverage across diverse domains?
-  \item[\rqref{2}] \textbf{Bandit Scheduling:} Does Discounted-UCB discover more branch edges than static uniform and flat byte baselines?
-  \item[\rqref{3}] \textbf{Defect Discovery:} What concrete vulnerabilities does \tool uncover in production codebases, and are they reachable?
-  \item[\rqref{4}] \textbf{Overhead \& Cost:} What runtime overhead do the headless shims and linker coverage interception introduce?
-\end{itemize}
+\begin{enumerate}[label=\textbf{RQ\arabic*:},leftmargin=*]
+  \item \textbf{Throughput \& Coverage:} Can \tool achieve high execution throughput and discover deep branch coverage across diverse domains?
+  \item \textbf{Bandit Scheduling:} Does Discounted-UCB discover more branch edges than static uniform and flat byte baselines?
+  \item \textbf{Defect Discovery:} What concrete vulnerabilities does \tool uncover in production codebases, and are they reachable?
+  \item \textbf{Overhead \& Cost:} What runtime overhead do the headless shims and linker coverage interception introduce?
+\end{enumerate}
 
 \input{tables/subjects}
 
@@ -100,7 +100,7 @@ Discounted-UCB outperforms static uniform scheduling ($\hat{A}_{12} = 0.88, p < 
 Table~\ref{tab:findings} summarizes the six upstream-confirmed defects discovered by \tool across the three codebases.
 
 \paragraph{Defect F1 (\fastgltf): Out-of-Bounds Heap Read (CWE-125).}
-In \texttt{fastgltf::Parser::generateMeshIndices}, when generating indices from vertex accessors for meshes lacking index buffers, the parser read accessor indices without checking bounds against the total accessor count.
+In \texttt{fastgltf::}\allowbreak\texttt{Parser::}\allowbreak\texttt{generateMeshIndices}, when generating indices from vertex accessors for meshes lacking index buffers, the parser read accessor indices without checking bounds against the total accessor count.
 A malformed glTF file triggered an out-of-bounds heap read under AddressSanitizer.
 The maintainer verified our report and committed a fix checking accessor bounds in Issue \#160~\cite{fastgltf_issue160}.
 
@@ -121,13 +121,13 @@ The maintainer acknowledged Issue \#6373 and unified sample allocation using \te
 
 \paragraph{Defect D1 (\drogon): Process Abort in \texttt{noexcept} (CWE-755).}
 As shown in Figure~\ref{fig:motivating}, \texttt{HttpFileImpl::save()} was marked \texttt{noexcept}.
-When an application handler saves an upload using a client-controlled filename exceeding 255 bytes, \texttt{std::filesystem::exists} threw \texttt{std::filesystem\_error}.
-The enclosing \texttt{noexcept} boundary caused \texttt{std::terminate()} to abort the multi-threaded web server process.
+When an application handler saves an upload using a client-controlled filename exceeding 255 bytes, \texttt{std::}\allowbreak\texttt{filesystem::}\allowbreak\texttt{exists} threw \texttt{std::}\allowbreak\texttt{filesystem\_error}.
+The enclosing \texttt{noexcept} boundary caused \texttt{std::}\allowbreak\texttt{terminate()} to abort the multi-threaded web server process.
 We reproduced this end-to-end against a production server over a real TCP socket via \texttt{curl}.
 The maintainers merged Pull Request \#2662, adopting non-throwing overloads~\cite{drogon_pr2662}.
 
 \paragraph{Defect D2 (\drogon): Out-of-Bounds Iterator Dereference (CWE-125).}
-In \texttt{HttpFileImpl::save()}, path traversal checks compared upload paths against the target directory using a three-iterator loop.
+In \texttt{HttpFileImpl::}\allowbreak\texttt{save()}, path traversal checks compared upload paths against the target directory using a three-iterator loop.
 For filenames with traversal prefixes such as \texttt{../../c}, the loop advanced \texttt{++it1} without checking against \texttt{end()}, dereferencing out-of-bounds heap memory in release builds.
 We submitted Pull Request \#2656, after which the maintainer committed the bounds check~\cite{drogon_pr2656}.
 

@@ -65,7 +65,7 @@ To track bandit rewards independently of libFuzzer's internal 8-bit counters, \t
 We compile targets with both \texttt{-fsanitize=fuzzer} and \texttt{-fsanitize-coverage=trace-pc-guard}.
 Because Clang's compiler runtime provides a default implementation of \texttt{\_\_sanitizer\_cov\_trace\_pc\_guard}, defining a duplicate symbol causes a link-time collision.
 
-We avoided this collision by using GNU linker symbol wrapping (\texttt{-Wl,--wrap=\_\_sanitizer\_cov\_trace\_pc\_guard}).
+We avoided this collision by using GNU linker symbol wrapping (\texttt{-Wl,}\allowbreak\texttt{--wrap=}\allowbreak\texttt{\_\_sanitizer\_}\allowbreak\texttt{cov\_}\allowbreak\texttt{trace\_}\allowbreak\texttt{pc\_}\allowbreak\texttt{guard}).
 Our wrapper inspects the guard variable, increments the independent coverage table, and forwards execution to the original libFuzzer handler.
 We chose linker wrapping over the documented \texttt{\_\_sanitizer\_get\_total\_unique\_coverage()} API because that API returns only a global monotonic edge count; it cannot identify which specific edge was tripped or maintain per-arm frequency ledgers.
 The wrapper introduces minimal runtime overhead ($<0.8\%$) while maintaining compatibility with the sanitizer runtime.

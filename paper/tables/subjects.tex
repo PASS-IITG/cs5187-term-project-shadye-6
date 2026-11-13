@@ -1,7 +1,7 @@
 \begin{table}[t]
   \caption{Evaluated subject systems across target domains, test harnesses, cumulative campaign executions, and peak branch edge coverage.}
   \label{tab:subjects}
-  \footnotesize
+  \resizebox{\columnwidth}{!}{%
   \begin{tabular}{llrrlrr}
     \toprule
     Target & Domain & Version / Commit & LoC & Harnesses & Executions & Peak Cov \\
@@ -12,6 +12,7 @@
     \midrule
     Total     & --- & --- & 201{,}630 & 59 & 807{,}520{,}128 & --- \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}%
+  }
 \end{table}
 
