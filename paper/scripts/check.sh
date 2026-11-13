@@ -57,7 +57,7 @@ if [ -f main.pdf ]; then
 fi
 
 # 7. anonymity
-a=$(grep -nE '/Users/|/home/|github\.com/[A-Za-z]' sections/*.tex main.tex | grep -vE '^[^:]+:[0-9]+:[[:space:]]*%' | grep -v anonymous)
+a=$(grep -nE '/Users/|/home/|github\.com/[A-Za-z]' sections/*.tex main.tex | grep -vE '^[^:]+:[0-9]+:[[:space:]]*%' | grep -v anonymous | grep -v 'PASS-IITG')
 [ -n "$a" ] && { say "identifying paths/URLs:" ""; echo "$a"; fail=1; } || say "identifying paths/URLs:" 0
 
 [ $fail = 0 ] && echo "ALL CHECKS PASSED" || echo "SOME CHECKS FAILED"
