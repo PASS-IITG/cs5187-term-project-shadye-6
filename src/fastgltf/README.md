@@ -25,7 +25,7 @@ All empirical results, coverage measurements, and vulnerability findings were ge
 
 ## 2. Research Hypothesis & Core Objectives
 
-> **Under constrained fuzzing budgets, does a target-specific, structure-aware mutation engine equipped with a multi-armed bandit (Discounted-UCB) adaptive scheduler outperform static byte-level and fixed hybrid mutation in code coverage, deep parser stage penetration, and critical memory safety vulnerability discovery?**
+> **Under constrained fuzzing budgets, does a target-specific, structure-aware mutation engine equipped with a multi-armed bandit (Discounted-UCB) adaptive scheduler outperform static byte-level and fixed hybrid mutation in code coverage, deep parser stage penetration, and very high-severity memory safety vulnerability discovery?**
 
 ### The Four Comparative Experimental Arms:
 1. **`fixed` (Baseline):** Static 4-way hybrid schedule with fixed probability weights (25% byte, 25% valid structural, 40% invariant-breaking, 10% procedural) without dynamic adaptation or telemetry overhead.

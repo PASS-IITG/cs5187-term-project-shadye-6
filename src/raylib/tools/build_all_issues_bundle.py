@@ -289,11 +289,11 @@ The following issues have already been submitted upstream as GitHub Pull Request
 |---|---|---|---|---|
 | `Issue-01_Automation_Export_OOB_Read` | Core / Automation | Out-of-Bounds Heap Read | `src/rcore.c:8052` in `ExportAutomationEventList()` | Low / DoS |
 | `Issue-02_GLTF_Buffer_View_OOB_Read` | Models / glTF | Out-of-Bounds Heap Read | `src/rmodels.c:4897` in `LoadGLTF()` | High / Crash |
-| `Issue-03_Model_Animation_Bones_Heap_Overflow` | Models / Animations | Heap Buffer Overflow (OOB Write) | `src/rmodels.c:2335` in `UpdateModelAnimationBones()` | Critical |
+| `Issue-03_Model_Animation_Bones_Heap_Overflow` | Models / Animations | Heap Buffer Overflow (OOB Write) | `src/rmodels.c:2335` in `UpdateModelAnimationBones()` | Very High |
 | `Issue-04_Image_Blur_Gaussian_Underflow` | Textures / Image Ops | Heap Over-Read / Int Underflow | `src/rtextures.c:2204` in `ImageBlurGaussian()` | Medium / Crash |
 | `Issue-05_GetCodepointPrevious_Underflow` | Text / UTF-8 | Heap Buffer Underflow | `src/rtext.c:2592` in `GetCodepointPrevious()` | Medium / Crash |
 | `Issue-06_Audio_Mixer_Buffer_NULL_Deref` | Audio / Mixer Callback | NULL Pointer Dereference | `src/raudio.c:2465` in `ReadAudioBufferFramesInInternalFormat()` | High / Crash |
-| `Issue-07_Audio_Stream_Sample_Size_Heap_Overflow` | Audio / Streams | Heap Buffer Overflow (76.8 KB Write) | `src/raudio.c:2784` in `UpdateAudioStreamInLockedState()` | Critical |
+| `Issue-07_Audio_Stream_Sample_Size_Heap_Overflow` | Audio / Streams | Heap Buffer Overflow (76.8 KB Write) | `src/raudio.c:2784` in `UpdateAudioStreamInLockedState()` | Very High |
 | `Issue-08_Audio_Channel_Converter_Heap_Overflow` | Audio / Sound Loader | Heap Buffer Overflow (4-Byte Write) | `src/raudio.c:975` in `LoadSoundFromWave()` | High / Crash |
 | `Issue-09_Image_Resize_Canvas_NULL_Deref` | Textures / Canvas | NULL Pointer Dereference | `src/rtextures.c:1920` in `ImageResizeCanvas()` | Medium / Crash |
 | `Issue-10_Ray_Collision_Mesh_OOB_Read` | Models / Collision | Out-of-Bounds Heap Read | `src/rmodels.c:4352` in `GetRayCollisionMesh()` | High / Crash |

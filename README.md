@@ -6,7 +6,7 @@
 [![Compiler: Clang 18.1.3](https://img.shields.io/badge/compiler-Clang_18.1.3-green.svg)](https://releases.llvm.org/18.1.3/)
 [![Sanitizers: ASan + UBSan](https://img.shields.io/badge/sanitizers-ASan_+_UBSan-red.svg)](https://llvm.org/docs/AddressSanitizer.html)
 [![Executions: 807M+](https://img.shields.io/badge/executions-807M+_across_59_targets-brightgreen.svg)](#)
-[![Vulnerabilities: 16 Discovered](https://img.shields.io/badge/vulnerabilities-16_discovered_(6_upstream)-critical.svg)](#security-vulnerabilities--discovered-defects)
+[![Vulnerabilities: 16 Discovered](https://img.shields.io/badge/vulnerabilities-16_discovered_(6_upstream)-red.svg)](#security-vulnerabilities--discovered-defects)
 [![Paper: ACM FSE acmsmall](https://img.shields.io/badge/paper-ACM_acmsmall_(12_pages)-blueviolet.svg)](paper/main.pdf)
 
 > **Authors:** Dakshin, Neel, Samyak  
@@ -24,7 +24,7 @@ Coverage-guided greybox fuzzers like AFL++ and libFuzzer traditionally treat tes
 2. **Interactive Multimedia & Game Engines (`raylib`):** Systems that require active display servers, hardware framebuffers, and audio mixing hardware, preventing automated execution in headless test runners.
 3. **Asynchronous Web Frameworks (`drogon`):** Multi-threaded servers bound to operating system TCP/IP loopback sockets, capping execution throughput to hundreds of iterations per second.
 
-**QTFuzz** is a cross-domain fuzzing architecture engineered to bridge these gaps without sacrificing execution speed. By combining **domain-specific structure-aware mutators**, **zero-socket in-memory network mocks**, **headless software rasterizer shims**, and an adaptive **multi-armed bandit (Discounted-UCB / UCB1) scheduler**, QTFuzz achieved **over 807 million executions across 59 target binaries**, discovering **16 critical and high-severity security defects**, with **6 vulnerabilities acknowledged, merged, or fixed upstream** by maintainers.
+**QTFuzz** is a cross-domain fuzzing architecture engineered to bridge these gaps without sacrificing execution speed. By combining **domain-specific structure-aware mutators**, **zero-socket in-memory network mocks**, **headless software rasterizer shims**, and an adaptive **multi-armed bandit (Discounted-UCB / UCB1) scheduler**, QTFuzz achieved **over 807 million executions across 59 target binaries**, discovering **16 very high- and high-severity security defects**, with **6 vulnerabilities acknowledged, merged, or fixed upstream** by maintainers.
 
 ---
 
@@ -104,14 +104,14 @@ Over a combined 24-hour campaign on an x86_64 AMD workstation (16 logical cores,
 | **D1** | `drogon` | `HttpFileImpl::save()` | Process Abort in `noexcept` | CWE-755 | [Issue #2661](https://github.com/drogonframework/drogon/issues/2661) / [PR #2662](https://github.com/drogonframework/drogon/pull/2662) | **Closed**; PR #2662 merged upstream |
 | **D2** | `drogon` | `HttpFileImpl::save()` | Iterator Out-of-Bounds | CWE-125 | [PR #2656](https://github.com/drogonframework/drogon/pull/2656) | **Closed**; issue raised, fixed in commit by maintainer |
 
-### 2. Additional Unfiled Security Defects (Medium / High / Critical)
+### 2. Additional Unfiled Security Defects (Medium / High / Very High)
 
 In addition to the 6 upstream-verified vulnerabilities above, QTFuzz uncovered 10 high-impact defects in `raylib` and `drogon`:
 
 | Subject | Component | Defect Type | Severity | Impact Description |
 | :--- | :--- | :--- | :---: | :--- |
-| `raylib` | `UpdateModelAnimationBones` | Heap Buffer Overflow | **Critical** | Arbitrary heap write via unvalidated bone transform counts (`src/rmodels.c:2335`). |
-| `raylib` | `UpdateAudioStreamInLockedState` | Heap Buffer Overflow | **Critical** | 76.8 KB heap overflow during audio sample resynchronization (`src/raudio.c:2784`). |
+| `raylib` | `UpdateModelAnimationBones` | Heap Buffer Overflow | **Very High** | Arbitrary heap write via unvalidated bone transform counts (`src/rmodels.c:2335`). |
+| `raylib` | `UpdateAudioStreamInLockedState` | Heap Buffer Overflow | **Very High** | 76.8 KB heap overflow during audio sample resynchronization (`src/raudio.c:2784`). |
 | `raylib` | `LoadGLTF()` | Out-of-Bounds Read | **High** | Unchecked accessor buffer view offset causes out-of-bounds heap read (`src/rmodels.c:4897`). |
 | `raylib` | `ReadAudioBufferFramesInternal` | NULL Pointer Deref | **High** | Missing device buffer check causes immediate crash in mixer callback (`src/raudio.c:2465`). |
 | `raylib` | `GetCodepointPrevious()` | Heap Buffer Underflow | **Medium** | Negative buffer pointer progression on truncated UTF-8 sequences (`src/rtext.c:2592`). |

@@ -2,7 +2,7 @@
 
 ### 1. Software Rasterizer Matrix Stack Underflow
 - **File & Line:** `src/external/rlsw.h:4379` in `swPopMatrix()`
-- **Severity:** Critical (Memory Corruption / SEGV)
+- **Severity:** Very High (Memory Corruption / SEGV)
 - **Description:** When `RLSW.stackModelviewCounter == 1`, the guard check `1 <= 0` passes. Evaluating `(--counter) - 1` computes index `-1` (`0xFFFFFFFF`), pointing `RLSW.currentMatrix` outside the `stackModelview[8]` array. The subsequent draw call writes directly into invalid memory.
 - **Fix:** Update guard to check `if (RLSW.stackModelviewCounter < 2)`.
 
@@ -10,7 +10,7 @@
 
 ### 2. Untrusted Automation Event Replay Out-of-Bounds Memory Write
 - **File & Line:** `src/rcore.c:3850` in `PlayAutomationEvent()`
-- **Severity:** Critical (Arbitrary Intra-Struct Heap Write)
+- **Severity:** Very High (Arbitrary Intra-Struct Heap Write)
 - **Description:** Parameters from untrusted `.rae` files are used directly as array indices into `CORE.Input.Gamepad.axisState[event.params[0]][event.params[1]]` and button arrays without bounds checks.
 - **Fix:** Verify `event.params[0] < MAX_GAMEPADS` and `event.params[1] < MAX_GAMEPAD_AXES`.
 

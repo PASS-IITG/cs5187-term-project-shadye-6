@@ -2,29 +2,28 @@
 \label{sec:discussion}
 
 \paragraph{Why did mutation operators apply across diverse domains?}
-At first glance, 3D mesh decoding, game rendering, and HTTP web serving appear to be unrelated domains.
-However, their vulnerability profiles share common structural mechanisms.
-All three domains process hierarchical data containing lengths, offsets, and binary buffers.
-An operator injecting extreme integer boundaries into glTF buffer views is equally effective at triggering integer overflows in \raylib audio calculations or \drogon \texttt{Content-Length} headers.
-Our empirical results indicate that boundary value and chunk mutators find utility across domain boundaries when paired with an adaptive bandit that learns arm weights online.
+At first glance, 3D mesh decoding, game rendering, and HTTP web serving appear unrelated.
+However, their vulnerability profiles share common mechanisms: all three process hierarchical data with lengths, offsets, and binary buffers.
+An operator injecting integer boundaries into glTF buffer views is equally effective at triggering integer overflows in \raylib audio or \drogon \texttt{Content-Length} headers.
+Our results show that boundary value and chunk mutators find utility across domains when paired with an adaptive bandit that learns arm weights online.
 
 \paragraph{Do headless in-memory shims miss real bugs?}
-By abstracting operating system sockets and graphics displays, headless shims bypass kernel TCP stacks, TLS handshakes, connection reuse state machines, and hardware timing.
-Consequently, in-memory shims cannot detect kernel-level socket race conditions, TLS negotiation bugs, or hardware-specific GPU driver faults.
-However, user-space memory corruptions, buffer overflows, and parser desynchronizations reside in application code.
-Testing in memory enables executing hundreds of millions of iterations that are computationally impractical over loopback sockets.
+By abstracting sockets and displays, headless shims bypass kernel TCP stacks, TLS handshakes, connection reuse state machines, and hardware timing.
+They cannot detect kernel race conditions, TLS bugs, or GPU driver faults.
+However, user-space memory corruptions and parser desynchronizations reside in application code.
+Testing in memory enables hundreds of millions of iterations that are computationally impractical over loopback sockets.
 
 \paragraph{Why are \texttt{noexcept} filesystem operations a severe threat to web server reliability?}
-C++ developers frequently mark file management methods \texttt{noexcept} to satisfy interface contracts or signal intended exception safety.
-However, standard filesystem functions throw \texttt{std::filesystem\_error} upon encountering unexpected runtime conditions, such as filenames exceeding length limits.
-When an exception escapes a \texttt{noexcept} boundary, the runtime aborts the process via \texttt{std::terminate()}.
-Because web servers run multiple worker threads within a single address space, a single malformed upload crashes the entire service.
-Developers must consistently use non-throwing \texttt{std::error\_code} overloads in all paths processing untrusted inputs.
+C++ developers mark file methods \texttt{noexcept} for interface contracts or exception safety.
+However, filesystem calls throw \texttt{std::filesystem\_error} on unexpected conditions, such as filenames exceeding length limits.
+When an exception escapes a \texttt{noexcept} boundary, the runtime aborts via \texttt{std::terminate()}.
+Because web servers run worker threads in a single address space, one malformed upload crashes the entire service.
+Developers must use non-throwing \texttt{std::error\_code} overloads for untrusted inputs.
 
 \paragraph{Could static analysis have detected defect D1?}
-Clang-Tidy includes a check (\texttt{bugprone-exception-escape}) designed to flag functions declared \texttt{noexcept} that invoke throwing operations.
-However, in large codebases with nested filesystem wrappers and templates, static checkers generate high false-alarm rates or require whole-program call graphs.
-In contrast, coverage-guided fuzzing produced an indisputable crashing reproducer with zero false positives.
+Clang-Tidy provides a check (\texttt{bugprone-}\allowbreak\texttt{exception-}\allowbreak\texttt{escape}) to flag \texttt{noexcept} functions invoking throwing calls.
+However, in large codebases with filesystem wrappers and templates, static checkers produce high false alarms or require whole-program call graphs.
+In contrast, coverage-guided fuzzing produced a concrete crashing reproducer with zero false positives.
 
 We leave the automated synthesis of headless mock shims from interface definitions for future work.
 
@@ -33,15 +32,11 @@ We leave the automated synthesis of headless mock shims from interface definitio
 
 \paragraph{Internal Validity.}
 Fuzz testing is non-deterministic.
-To mitigate this threat, we executed 10 independent trials on \fastgltf reporting Mann-Whitney U tests and Vargha-Delaney $\hat{A}_{12}$ effect sizes.
-We ran multi-worker campaigns totaling 804 million inputs on \raylib and \drogon, and verified all defects with standalone C++ reproducers.
+We mitigated this by executing 10 independent trials on \fastgltf reporting Mann-Whitney U tests and Vargha-Delaney $\hat{A}_{12}$ effect sizes, running 804M inputs on \raylib and \drogon, and verifying all defects with standalone C++ reproducers.
 
 \paragraph{External Validity.}
-Our evaluation examines three open-source C and C++ projects: \fastgltf, \raylib, and \drogon, which may not represent all C/C++ software.
-To mitigate this threat, we selected mature systems spanning three distinct architectural domains: 3D binary file parsing, interactive multimedia rendering, and high-concurrency network servers.
-However, our conclusions may not directly generalize to bare-metal embedded firmware or safety-critical operating systems.
+Our evaluation examines three mature C/C++ projects (\fastgltf, \raylib, and \drogon) spanning distinct domains: binary asset parsing, multimedia rendering, and high-concurrency web servers.
+While diverse, our findings may not generalize to embedded firmware or safety-critical operating systems.
 
 \paragraph{Construct Validity.}
-A potential threat is whether branch edge coverage reflects software security testing effectiveness.
-To mitigate this threat, we paired coverage feedback with AddressSanitizer and UndefinedBehaviorSanitizer instrumentation.
-Furthermore, we evaluated bug-finding effectiveness by reporting candidate defects to upstream maintainers and confirming their security impact through merged pull requests and official bug trackers.
+To ensure branch edge coverage reflects testing effectiveness, we paired coverage feedback with AddressSanitizer and UndefinedBehaviorSanitizer instrumentation, confirming security impact through merged pull requests and official bug trackers.

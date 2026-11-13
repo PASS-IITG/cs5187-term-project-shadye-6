@@ -36,7 +36,7 @@ drogon-issues-and-reproducers/
 │   ├── verification_results.log              # Log confirming 0 crashes after fix
 │   └── 0001-Fix-out-of-bounds-iterator-dereference-in-HttpFileIm.patch
 │
-├── issue-02-filesystem-noexcept-dos/         # Issue 02: Critical Server DoS in HttpFileImpl
+├── issue-02-filesystem-noexcept-dos/         # Issue 02: Very High Server DoS in HttpFileImpl
 │   ├── ISSUE_REPORT.md                       # Detailed incident report
 │   ├── reproduce_standalone.cc               # Standalone C++ reproducer (fork/exec SIGABRT)
 │   ├── crash-65e67953a3b9503f79ab1391320e2152ffed3ede # Raw 266-byte trigger file

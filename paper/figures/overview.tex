@@ -3,16 +3,16 @@
 \begin{tikzpicture}[
     >=Stealth, font=\scriptsize,
     titleheader/.style={
-      font=\tiny\bfseries, align=center, text width=32.5mm,
-      fill=black!10, draw=black!60, rounded corners=2pt, inner sep=2pt
+      font=\tiny\bfseries, align=center, text width=31.5mm,
+      fill=black!10, draw=black!60, rounded corners=2pt, inner sep=1.5pt
     },
     stagecard/.style={
-      draw=black!70, rounded corners=2pt, align=left, inner sep=2.5pt,
-      text width=32.5mm, minimum height=13.5mm, fill=white, font=\tiny, line width=0.5pt
+      draw=black!70, rounded corners=2pt, align=left, inner sep=2pt,
+      text width=31.5mm, minimum height=11mm, fill=white, font=\tiny, line width=0.5pt
     },
     oraclecard/.style={
-      draw=black!75, rounded corners=2pt, align=center, inner sep=2.5pt,
-      text width=113mm, minimum height=7.5mm, fill=black!7, font=\tiny, line width=0.6pt
+      draw=black!75, rounded corners=2pt, align=center, inner sep=2pt,
+      text width=108mm, minimum height=6.5mm, fill=black!7, font=\tiny, line width=0.6pt
     },
     flow/.style={->, line width=0.6pt, draw=black!85},
     back/.style={->, line width=0.6pt, dashed, draw=black!75},
@@ -23,31 +23,31 @@
   ]
   % Stage 1: Base Engine (fastgltf)
   \node[titleheader] (h1) at (0, 0) {(1) Base Engine (\fastgltf)};
-  \node[stagecard, below=1.8mm of h1] (s1) {%
+  \node[stagecard, below=1.2mm of h1] (s1) {%
     $\triangleright$ Structured AST Mutators\\
     $\triangleright$ Binary Geometry Mutators\\
     $\triangleright$ Discounted-UCB1 Bandit%
   };
 
   % Stage 2: Multimedia Extension (raylib)
-  \node[titleheader, right=7.5mm of h1] (h2) {(2) Multimedia (\raylib)};
-  \node[stagecard, below=1.8mm of h2] (s2) {%
+  \node[titleheader, right=6.5mm of h1] (h2) {(2) Multimedia (\raylib)};
+  \node[stagecard, below=1.2mm of h2] (s2) {%
     $\triangleright$ 37 Subsystem Binaries\\
     $\triangleright$ Headless \texttt{rlsw} Rasterizer\\
     $\triangleright$ Virtual VFS \& Audio Pumps%
   };
 
   % Stage 3: Network Extension (drogon)
-  \node[titleheader, right=7.5mm of h2] (h3) {(3) Network I/O (\drogon)};
-  \node[stagecard, below=1.8mm of h3] (s3) {%
+  \node[titleheader, right=6.5mm of h2] (h3) {(3) Network I/O (\drogon)};
+  \node[stagecard, below=1.2mm of h3] (s3) {%
     $\triangleright$ 19 Stateful Target Binaries\\
     $\triangleright$ \texttt{MockTcpConnection} (0-sock)\\
     $\triangleright$ Tail Slicing \& Sandboxing%
   };
 
   % Combined Oracle & Feedback Layer
-  \node[oraclecard, below=3.5mm of s2] (o) {%
-    \textbf{Sanitizer Oracle (ASan / UBSan) \& Linker Coverage Interception (\texttt{-Wl,--wrap})}\\[1.5pt]
+  \node[oraclecard, below=2.5mm of s2] (o) {%
+    \textbf{Sanitizer Oracle (ASan / UBSan) \& Linker Coverage Interception (\texttt{-Wl,--wrap})}\\[1pt]
     Dual-channel edge telemetry $\bullet$ Crash triage engine $\bullet$ 16 discovered security defects%
   };
 
@@ -66,11 +66,11 @@
   % Background card frames behind each stage
   \begin{scope}[on background layer]
     \node[draw=black!25, fill=black!1, rounded corners=3pt, line width=0.4pt,
-          fit=(h1) (s1), inner sep=2.5pt] {};
+          fit=(h1) (s1), inner sep=2pt] {};
     \node[draw=black!25, fill=black!1, rounded corners=3pt, line width=0.4pt,
-          fit=(h2) (s2), inner sep=2.5pt] {};
+          fit=(h2) (s2), inner sep=2pt] {};
     \node[draw=black!25, fill=black!1, rounded corners=3pt, line width=0.4pt,
-          fit=(h3) (s3), inner sep=2.5pt] {};
+          fit=(h3) (s3), inner sep=2pt] {};
   \end{scope}
 
 \end{tikzpicture}

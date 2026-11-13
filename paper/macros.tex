@@ -9,6 +9,8 @@
 \usepackage{array}
 \usepackage{pifont}
 \usepackage{tikz}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=*}
 \microtypesetup{expansion=false}
 \usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds}
 \DeclareRobustCommand{\circled}[1]{\tikz[baseline=(c.base)]\node[circle,draw,inner sep=0.7pt,font=\tiny\bfseries] (c) {#1};}
@@ -33,17 +35,21 @@
 % ---- results: one boxed, numbered claim per observation ----
 \newcounter{observation}
 \newenvironment{observation}
-  {\refstepcounter{observation}\par\vspace{1pt}\noindent\fbox{\parbox{0.97\linewidth}{\textbf{Observation~\theobservation.}~}}}
-  {\par\vspace{1pt}}
+  {\refstepcounter{observation}\par\vspace{0.5pt}\noindent\begingroup\setlength{\fboxsep}{2pt}\fbox{\parbox{0.97\linewidth}{\textbf{Observation~\theobservation.}~}}}
+  {\endgroup\par\vspace{0.5pt}}
 
 % ---- spacing adjustments ----
 \AtBeginDocument{%
   \setlength{\bibsep}{-1.5pt}%
-  \setlength{\textfloatsep}{5pt plus 1pt minus 1pt}%
-  \setlength{\floatsep}{4pt plus 1pt minus 1pt}%
-  \setlength{\intextsep}{4pt plus 1pt minus 1pt}%
-  \setlength{\abovecaptionskip}{3pt plus 1pt minus 1pt}%
-  \setlength{\belowcaptionskip}{2pt plus 1pt minus 1pt}%
+  \setlength{\textfloatsep}{4pt plus 1pt minus 1pt}%
+  \setlength{\floatsep}{3pt plus 1pt minus 1pt}%
+  \setlength{\intextsep}{3pt plus 1pt minus 1pt}%
+  \setlength{\abovecaptionskip}{2pt plus 1pt minus 1pt}%
+  \setlength{\belowcaptionskip}{1pt plus 1pt minus 1pt}%
+  \setlength{\abovedisplayskip}{3pt plus 1pt minus 1pt}%
+  \setlength{\belowdisplayskip}{3pt plus 1pt minus 1pt}%
+  \setlength{\abovedisplayshortskip}{1pt plus 1pt minus 1pt}%
+  \setlength{\belowdisplayshortskip}{1pt plus 1pt minus 1pt}%
 }
 
 % ---- editorial symbols ----
@@ -52,7 +58,8 @@
 
 \lstset{basicstyle=\ttfamily\footnotesize,columns=fullflexible,
         keepspaces=true,frame=single,framesep=2pt,xleftmargin=4pt,
-        numbers=left,numberstyle=\tiny,numbersep=4pt}
+        numbers=left,numberstyle=\tiny,numbersep=4pt,
+        aboveskip=2.5pt,belowskip=2pt}
 
 % long \texttt words otherwise run into the margin
 \setlength{\emergencystretch}{3em}

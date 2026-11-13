@@ -16,12 +16,11 @@ Starting from a pure structured file format parser, our goal is to extend the sa
 \begin{figure}[t]
 \begin{lstlisting}[numbers=none,escapechar=@]
 int HttpFileImpl::save(const std::string &p) const noexcept {
-    if (!std::filesystem::exists(p)) { // Throws on len > 255
+    if (!std::filesystem::exists(p)) // Throws on len > 255
         std::filesystem::create_directories(p);
-    }
 } // Escaping exception in noexcept invokes std::terminate()
 \end{lstlisting}
-\caption{Motivating defect from \drogon (\textbf{D1}, simplified). Calling throwing \texttt{std::filesystem::exists} inside a \texttt{noexcept} method causes \texttt{std::terminate()} to abort the process. In production, this requires an application handler to invoke \texttt{save()} using the client-supplied upload filename.}
+\caption{Motivating defect in \drogon (\textbf{D1}, simplified). Calling throwing \texttt{std::filesystem::exists} inside a \texttt{noexcept} method causes \texttt{std::terminate()} to abort the process when an upload filename exceeds 255 bytes.}
 \label{fig:motivating}
 \end{figure}
 
@@ -50,9 +49,8 @@ Our results show that modular headless shims allow an in-memory fuzzer to reach 
 
 \paragraph{Contributions.}
 \begin{itemize}
-  \item We formalize cross-domain fuzzer adaptation across file formats, multimedia runtimes, and network services (Section~\ref{sec:problem}).
-  \item We present \tool, an adaptive architecture combining structure-aware mutation, a Discounted-UCB bandit scheduler, and linker-wrapped coverage interception (Section~\ref{sec:approach}).
-  \item We describe domain-specific headless shims for software rasterizers, audio streams, and asynchronous event loops (Section~\ref{sec:approach}).
-  \item We evaluate \tool across three open-source systems, analyzing 807 million executions and documenting 6 verified defects (Section~\ref{sec:eval}).
-  \item We release our fuzz targets, seed corpora, and reproducers (Section~\ref{sec:data}).
+  \item Cross-domain fuzzer adaptation across file formats, multimedia runtimes, and network services (Section~\ref{sec:problem}).
+  \item The \tool architecture combining structure-aware mutation, Discounted-UCB scheduling, and linker wrapping (Section~\ref{sec:approach}).
+  \item Domain-specific headless shims for software rasterizers, audio streams, and asynchronous event loops (Section~\ref{sec:approach}).
+  \item Evaluation across three open-source systems over 807M executions documenting 16 defects (Section~\ref{sec:eval}), with open artifacts (Section~\ref{sec:data}).
 \end{itemize}

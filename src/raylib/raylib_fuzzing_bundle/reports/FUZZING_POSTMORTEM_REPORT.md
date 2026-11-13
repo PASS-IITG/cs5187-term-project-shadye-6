@@ -45,7 +45,7 @@ pie title Crash Artifact Distribution by Target Subsystem
 
 ## 3. Vulnerability Deep Dive & Root-Cause Analysis
 
-### 🔴 Critical 1: Software Rasterizer Matrix Stack Underflow & Memory Pointer Corruption
+### 🔴 Very High 1: Software Rasterizer Matrix Stack Underflow & Memory Pointer Corruption
 - **Location:** [src/external/rlsw.h:4379](file:///c:/Users/dxksh/Desktop/swa/raylib-src/src/external/rlsw.h#L4379) in `swPopMatrix()`
 - **Impact:** Memory Corruption / Remote Code Execution / Crash
 - **Sanitizer Evidence:** 
@@ -70,7 +70,7 @@ pie title Crash Artifact Distribution by Target Subsystem
 
 ---
 
-### 🔴 Critical 2: Arbitrary Intra-Struct Heap Overwrite via Automation Replay
+### 🔴 Very High 2: Arbitrary Intra-Struct Heap Overwrite via Automation Replay
 - **Location:** [src/rcore.c:3850](file:///c:/Users/dxksh/Desktop/swa/raylib-src/src/rcore.c#L3850) in `PlayAutomationEvent()`
 - **Impact:** Memory Overwrite / State Hijack
 - **Sanitizer Evidence:** 

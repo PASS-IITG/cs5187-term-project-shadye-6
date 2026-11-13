@@ -20,7 +20,7 @@ Over **14.5 million iterations** (including **7.88+ million iterations** execute
 6. **Automation Event Serialization / Deserialization** (`fuzz_automation`)
 
 ### Campaign Highlights
-- **12 Distinct Vulnerabilities Uncovered:** Spanning critical heap buffer overflow writes (up to 76.8 KB write past buffer), heap buffer underflows, global out-of-bounds reads, invalid pointer dereferences, matrix stack underflows, and arithmetic division by zero.
+- **12 Distinct Vulnerabilities Uncovered:** Spanning very high-severity heap buffer overflow writes (up to 76.8 KB write past buffer), heap buffer underflows, global out-of-bounds reads, invalid pointer dereferences, matrix stack underflows, and arithmetic division by zero.
 - **2 Upstream Pull Requests Submitted:**
   - **PR #6362 (Open):** Fixes `rlgl` matrix stack underflow in `src/external/rlsw.h` & `src/rlgl.h`.
   - **PR #6374 (Open, Closes #6373):** Fixes NULL dereference in `LoadWaveSamples()` in `src/raudio.c`.
@@ -165,7 +165,7 @@ If a glTF file has an accessor with a missing `buffer_view`, a NULL `buffer->dat
 
 - **Vulnerable File:** `src/rmodels.c:2330-2336`
 - **CWE:** [CWE-122: Heap-based Buffer Overflow](https://cwe.mitre.org/data/definitions/122.html)
-- **Severity:** Critical / Memory Corruption
+- **Severity:** Very High / Memory Corruption
 - **Reproducer:** `crash-57ad21eeee294bb26a00fce4edde62251ba466e3.glb`
 
 #### Root Cause
@@ -288,7 +288,7 @@ without checking if `audioBuffer->data` is valid, crashing the application insid
 
 - **Vulnerable File:** `src/raudio.c:2153, 2784`
 - **CWE:** [CWE-122: Heap-based Buffer Overflow](https://cwe.mitre.org/data/definitions/122.html)
-- **Severity:** **Critical** (Arbitrary Heap Overwrite)
+- **Severity:** **Very High** (Arbitrary Heap Overwrite)
 - **Reproducer:** `crash-42a39bce2fa4ed155c4ca919b85c578165558e3c.wav`
 
 #### Root Cause
@@ -480,7 +480,7 @@ To reproduce any finding using the standalone harness:
 
 1. **Upstream PR Monitoring:** Monitor reviews for **PR #6362** (rlgl matrix stack) and **PR #6374** (LoadWaveSamples NULL dereference).
 2. **Prioritized Submissions:** Submit pending issues upstream in order of risk:
-   - **Priority 1 (Critical):** Issue 07 (`UpdateAudioStreamInLockedState` 76.8 KB heap overflow) and Issue 03 (`UpdateModelAnimationBones` heap overflow).
+   - **Priority 1 (Very High):** Issue 07 (`UpdateAudioStreamInLockedState` 76.8 KB heap overflow) and Issue 03 (`UpdateModelAnimationBones` heap overflow).
    - **Priority 2 (High):** Issue 08 (channel converter overflow), Issue 02 (glTF buffer view out-of-bounds read), Issue 10 (`GetRayCollisionMesh` out-of-bounds read), and Issue 06 (audio mixer NULL deref).
    - **Priority 3 (Medium/Low):** Issue 09 (`ImageResizeCanvas` NULL deref), Issue 04 (`ImageBlurGaussian` underflow), Issue 05 (`GetCodepointPrevious` UTF-8 underflow), and Issue 01 (`ExportAutomationEventList` out-of-bounds read).
 

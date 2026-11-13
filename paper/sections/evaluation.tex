@@ -3,10 +3,10 @@
 
 We evaluate \tool to answer four research questions:
 \begin{itemize}
-  \item[\rqref{1}] \textbf{Throughput \& Coverage:} Can \tool achieve high execution throughput and discover deep branch coverage across diverse software domains?
-  \item[\rqref{2}] \textbf{Bandit Scheduling:} Does Discounted-UCB scheduling discover more branch edges than static uniform and flat byte baselines?
-  \item[\rqref{3}] \textbf{Defect Discovery:} What concrete vulnerabilities does \tool uncover in production codebases, and are they reachable in practice?
-  \item[\rqref{4}] \textbf{Overhead \& Cost:} What runtime overhead do the headless shims and linker-wrapped coverage interception introduce?
+  \item[\rqref{1}] \textbf{Throughput \& Coverage:} Can \tool achieve high execution throughput and discover deep branch coverage across diverse domains?
+  \item[\rqref{2}] \textbf{Bandit Scheduling:} Does Discounted-UCB discover more branch edges than static uniform and flat byte baselines?
+  \item[\rqref{3}] \textbf{Defect Discovery:} What concrete vulnerabilities does \tool uncover in production codebases, and are they reachable?
+  \item[\rqref{4}] \textbf{Overhead \& Cost:} What runtime overhead do the headless shims and linker coverage interception introduce?
 \end{itemize}
 
 \input{tables/subjects}
@@ -100,47 +100,40 @@ Discounted-UCB outperforms static uniform scheduling ($\hat{A}_{12} = 0.88, p < 
 Table~\ref{tab:findings} summarizes the six upstream-confirmed defects discovered by \tool across the three codebases.
 
 \paragraph{Defect F1 (\fastgltf): Out-of-Bounds Heap Read (CWE-125).}
-In \texttt{fastgltf::Parser::generateMeshIndices}, when parsing glTF meshes lacking index buffers, the library generates indices based on vertex accessors.
-The parser read the accessor index from the attribute map without verifying that the index was strictly less than the total accessor count.
+In \texttt{fastgltf::Parser::generateMeshIndices}, when generating indices from vertex accessors for meshes lacking index buffers, the parser read accessor indices without checking bounds against the total accessor count.
 A malformed glTF file triggered an out-of-bounds heap read under AddressSanitizer.
 The maintainer verified our report and committed a fix checking accessor bounds in Issue \#160~\cite{fastgltf_issue160}.
 
 \paragraph{Defect R1 (\raylib): Matrix Stack Integer Underflow (CWE-191).}
-In \raylib's software rasterizer (\texttt{rlsw.h}), transform matrices are managed via an internal matrix stack with an unsigned counter \texttt{stackCounter}.
-Calling \texttt{swPopMatrix()} when \texttt{stackCounter == 0} caused an unsigned integer underflow to \texttt{UINT\_MAX}.
-Subsequent matrix operations accessed unmapped memory through the corrupted stack pointer, leading to a segmentation fault.
-This is reachable from untrusted inputs by loading a 3D model with imbalanced transform hierarchies.
-The maintainer acknowledged the bug in Issue \#6361 and merged Pull Request \#6362~\cite{raylib_issue6361}.
+In \raylib's software rasterizer (\texttt{rlsw.h}), calling \texttt{swPopMatrix()} when \texttt{stackCounter == 0} caused an unsigned integer underflow to \texttt{UINT\_MAX}.
+Subsequent matrix operations accessed unmapped memory via the corrupted pointer, causing a segmentation fault.
+This is reachable via 3D models with imbalanced transform hierarchies.
+The maintainer acknowledged Issue \#6361 and merged Pull Request \#6362~\cite{raylib_issue6361}.
 
 \paragraph{Defect R2 (\raylib): Out-of-Bounds Read in Event Export (CWE-125).}
-In \raylib's serialization module (\texttt{src/rcore.c}), \texttt{ExportAutomationEventList()} serializes automation events to text.
-The function indexes a global lookup table of 24 string pointers (\texttt{autoEventTypeName}) using unvalidated \texttt{event.type} values.
-When reading an untrusted \texttt{.rae} automation file containing $\text{type} \ge 24$, the function read unmapped memory.
-The maintainer acknowledged the defect in Issue \#6378 and committed a fix~\cite{raylib_issue6378}.
+In \texttt{src/rcore.c}, \texttt{ExportAutomationEventList()} indexes a table of 24 string pointers (\texttt{autoEventTypeName}) with unvalidated \texttt{event.type} values.
+Reading an untrusted \texttt{.rae} file with $\text{type} \ge 24$ caused out-of-bounds memory reads.
+The maintainer acknowledged Issue \#6378 and committed a fix~\cite{raylib_issue6378}.
 
 \paragraph{Defect R3 (\raylib): NULL Pointer Dereference in Audio Allocation (CWE-476).}
-In \texttt{src/raudio.c}, \texttt{LoadWaveSamples()} loads raw audio waveforms.
-When parsing an untrusted WAV file declaring an exorbitant sample count, the memory allocation call \texttt{RL\_MALLOC()} returned \texttt{NULL}.
-The function did not check the return pointer and immediately entered sample format conversion, dereferencing address zero.
-The maintainer acknowledged the defect in Issue \#6373; while Pull Request \#6374 was closed, the maintainer unified sample allocation using \texttt{RL\_CALLOC} in commit 7639166~\cite{raylib_issue6373}.
+In \texttt{src/raudio.c}, \texttt{LoadWaveSamples()} failed to check whether \texttt{RL\_MALLOC()} returned NULL when parsing an exorbitant sample count, immediately dereferencing address zero during format conversion.
+The maintainer acknowledged Issue \#6373 and unified sample allocation using \texttt{RL\_CALLOC} in commit 7639166~\cite{raylib_issue6373}.
 
 \paragraph{Defect D1 (\drogon): Process Abort in \texttt{noexcept} (CWE-755).}
-As shown in Figure~\ref{fig:motivating}, file saving operations in \texttt{HttpFileImpl::save()} were marked \texttt{noexcept}.
-When an application handler saves an uploaded file using a client-controlled filename exceeding 255 bytes, \texttt{std::filesystem::exists} threw \texttt{std::filesystem\_error} with \texttt{ENAMETOOLONG}.
-Because the enclosing method was \texttt{noexcept}, the C++ runtime called \texttt{std::terminate()}, killing the entire server process.
-We reproduced this defect end-to-end against a production \drogon HTTP server over a real TCP socket using \texttt{curl -F "file=@overflow.bin" http://localhost:8848/upload}.
-The maintainers merged Pull Request \#2662, switching to non-throwing \texttt{std::error\_code} overloads~\cite{drogon_pr2662}.
+As shown in Figure~\ref{fig:motivating}, \texttt{HttpFileImpl::save()} was marked \texttt{noexcept}.
+When an application handler saves an upload using a client-controlled filename exceeding 255 bytes, \texttt{std::filesystem::exists} threw \texttt{std::filesystem\_error}.
+The enclosing \texttt{noexcept} boundary caused \texttt{std::terminate()} to abort the multi-threaded web server process.
+We reproduced this end-to-end against a production server over a real TCP socket via \texttt{curl}.
+The maintainers merged Pull Request \#2662, adopting non-throwing overloads~\cite{drogon_pr2662}.
 
 \paragraph{Defect D2 (\drogon): Out-of-Bounds Iterator Dereference (CWE-125).}
-In \texttt{HttpFileImpl::save()}, path traversal checks compare upload paths against the target directory using a three-iterator loop.
-When processing filenames containing traversal prefixes such as \texttt{../../c}, the weakly canonicalized path contained fewer components than the root.
-The comparison loop advanced \texttt{++it1} without checking whether \texttt{it1} had reached \texttt{end()}.
-In debug builds, this triggered a fatal assertion failure in libstdc++; in release builds without assertions, it dereferenced out-of-bounds heap memory.
-We submitted a report in Pull Request \#2656, after which the maintainer committed the corresponding bounds check~\cite{drogon_pr2656}.
+In \texttt{HttpFileImpl::save()}, path traversal checks compared upload paths against the target directory using a three-iterator loop.
+For filenames with traversal prefixes such as \texttt{../../c}, the loop advanced \texttt{++it1} without checking against \texttt{end()}, dereferencing out-of-bounds heap memory in release builds.
+We submitted Pull Request \#2656, after which the maintainer committed the bounds check~\cite{drogon_pr2656}.
 
 \paragraph{Additional Unfiled Medium- and High-Severity Defects.}
 In addition to the six upstream-confirmed defects, \tool uncovered ten medium- and high-severity defects verified with standalone reproducers.
-In \raylib, we uncovered two critical heap buffer overflows: an arbitrary write past allocated bone transformation matrices in \texttt{UpdateModelAnimationBones()} (CWE-122) and an audio stream buffer overflow of up to 76.8~KB in \texttt{UpdateAudioStreamInLockedState()} (CWE-122).
+In \raylib, we uncovered two very high-severity heap buffer overflows: an arbitrary write past allocated bone transformation matrices in \texttt{UpdateModelAnimationBones()} (CWE-122) and an audio stream buffer overflow of up to 76.8~KB in \texttt{UpdateAudioStreamInLockedState()} (CWE-122).
 We identified an out-of-bounds heap read in glTF accessor buffer views (CWE-125) and an unchecked mixer callback NULL dereference in \texttt{ReadAudioBufferFramesInInternalFormat()} (CWE-476).
 Additional findings include an integer underflow in \texttt{ImageBlurGaussian()} (CWE-191) and a backward scan buffer underflow in \texttt{GetCodepointPrevious()} (CWE-191).
 In \drogon, \tool detected premature header termination causing body desynchronization and request smuggling in \texttt{HttpRequestParser.cc} (CWE-444, verified using a differential oracle against Node.js \texttt{llhttp}).

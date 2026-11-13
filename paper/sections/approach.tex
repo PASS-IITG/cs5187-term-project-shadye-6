@@ -16,12 +16,12 @@ Our design contribution lies in the cross-domain fuzzer adaptation, the non-stat
 \subsection{Shared Mutation Engine and Operators}
 \label{sec:mutation_engine}
 \tool provides a unified library of mutators grouped into four operational arms:
-\begin{enumerate}
-  \item \textbf{Byte Mutation (\texttt{bin.libfuzzer}):} Applies standard bit flips, byte insertions, and chunk deletions.
-  \item \textbf{Integer Boundary Injection (\texttt{bin.intedge}):} Overwrites 2-byte, 4-byte, and 8-byte integers with boundary values ($0, \pm 1, 0\text{x7F}, 0\text{xFFFF}, 2^{31}-1, \texttt{SIZE\_MAX}$).
-  \item \textbf{Block Duplication (\texttt{bin.blockdup}):} Identifies repeated container structures (such as glTF nodes, image scanlines, or HTTP headers) and duplicates chunks to test parser buffer limits.
-  \item \textbf{Length and Offset Fixup (\texttt{bin.fixup}):} Calculates and repairs header container sizes (such as RIFF, GLB, and Content-Length) with 50\% probability, allowing mutants to pass outer framing checks and exercise inner parsers.
-\end{enumerate}
+\begin{itemize}
+  \item \textbf{Byte Mutation (\texttt{bin.libfuzzer}):} Applies bit flips, byte insertions, and chunk deletions.
+  \item \textbf{Integer Boundary Injection (\texttt{bin.intedge}):} Overwrites 2-, 4-, and 8-byte integers with boundary values ($0, \pm 1, 0\text{x7F}, 0\text{xFFFF}, 2^{31}-1, \texttt{SIZE\_MAX}$).
+  \item \textbf{Block Duplication (\texttt{bin.blockdup}):} Duplicates repeated structures (glTF nodes, image scanlines, HTTP headers) to test buffer limits.
+  \item \textbf{Length and Offset Fixup (\texttt{bin.fixup}):} Repairs container sizes (RIFF, GLB, Content-Length) with 50\% probability to exercise inner parsers.
+\end{itemize}
 
 \subsection{Discounted-UCB Bandit Scheduling}
 \label{sec:bandit_scheduler}
@@ -45,9 +45,8 @@ Developing these shims required moderate manual engineering effort (4{,}350 line
 Testing interactive graphics through a single entry point causes mutators to stall on display setup.
 We decomposed \raylib into 37 focused targets using two virtual machine designs:
 \begin{itemize}
-  \item \textbf{Image VM (\texttt{fuzz\_image\_ops}):} Interprets the fuzzer input as a stream of bytecode instructions across 52 image-processing operations (resampling, cropping, convolution kernels, and format conversions).
-  Inputs are parsed using a lightweight reader (\texttt{fz\_rd}) that deserializes clamped arguments from the payload.
-  \item \textbf{Render VM (\texttt{fuzz\_render\_vm}):} Drives 48 drawing and state operations directly against the software rasterizer (\texttt{rlsw}) over virtual memory framebuffers, testing matrix stacks and procedural geometry without an X11/Wayland display server.
+  \item \textbf{Image VM (\texttt{fuzz\_image\_ops}):} Executes 52 image operations (resampling, cropping, convolution kernels) via a deserializing reader (\texttt{fz\_rd}).
+  \item \textbf{Render VM (\texttt{fuzz\_render\_vm}):} Drives 48 drawing and state operations directly against the software rasterizer (\texttt{rlsw}) over memory framebuffers, testing matrix stacks and geometry without display servers.
 \end{itemize}
 For audio, harnesses pump the mixer callback synchronously on the fuzzer thread, eliminating race conditions.
 
@@ -55,10 +54,9 @@ For audio, harnesses pump the mixer callback synchronously on the fuzzer thread,
 Web framework fuzzing is traditionally throttled by TCP socket allocation.
 We decoupled \drogon's parser logic from the operating system via three shims:
 \begin{itemize}
-  \item \textbf{\texttt{MockTcpConnection}:} An in-memory C++ class implementing the \texttt{trantor::TcpConnection} interface.
-  It pushes buffers directly into \texttt{HttpRequestParser} and \texttt{HttpResponseParser} callbacks without OS socket system calls.
-  \item \textbf{Tail Slicer:} Rather than injecting random bytes into HTTP request streams, the fuzzer uses the trailing 4 bytes of each input as a chunk delivery schedule, testing packet fragmentation without corrupting seed payloads.
-  \item \textbf{RAII Sandboxing:} Multipart upload targets execute inside isolated temporary directories that automatically unlink files upon parser completion.
+  \item \textbf{\texttt{MockTcpConnection}:} Implements \texttt{trantor::TcpConnection} in memory, pushing buffers directly into HTTP callbacks without socket system calls.
+  \item \textbf{Tail Slicer:} Uses trailing 4 bytes of each input as a chunk delivery schedule, testing packet fragmentation without corrupting seed payloads.
+  \item \textbf{RAII Sandboxing:} Executes multipart upload targets in temporary directories that automatically unlink files upon parser completion.
 \end{itemize}
 
 \subsection{Dual-Channel Coverage Interception}
